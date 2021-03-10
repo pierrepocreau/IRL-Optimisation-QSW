@@ -91,5 +91,5 @@ class SDP:
 
     def optimize(self, verbose):
         prob = cp.Problem(cp.Maximize(cp.sum(self.X[0] @ self.objectifFunc)), self.constraints)
-        prob.solve(verbose=verbose)
+        prob.solve(verbose=verbose,solver=cp.SCS)
         return prob.value
