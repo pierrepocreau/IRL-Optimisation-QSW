@@ -59,7 +59,7 @@ class SDP:
                 for validAnswer in self.game.validAnswerIt(question):
                     payoutVec.append(self.game.genVecPlayerPayout(validAnswer, question, playerId))
 
-            payoutVec = 1 / 4 * np.array(payoutVec).transpose()
+            payoutVec = self.game.questionDistribution * np.array(payoutVec).transpose()
 
             # Payout for strat which diverge from advice
             for type in ['0', '1']:
@@ -75,7 +75,7 @@ class SDP:
                         for validAnswer in filter(nowValid, self.game.wrongAnswerIt(question)):
                             payoutVecNot.append(self.game.genVecPlayerNotPayout(validAnswer, question, playerId))
 
-                    payoutVecNot = 1 / 4 * np.array(payoutVecNot).transpose()
+                    payoutVecNot = self.game.questionDistribution * np.array(payoutVecNot).transpose()
                     self.constraints.append(cp.sum(self.X[0] @ (payoutVec - payoutVecNot)) >= 0)
 
     def objectifFunctions(self, game):
@@ -85,7 +85,7 @@ class SDP:
             for validAnswer in game.validAnswerIt(question):
                 objectifFunctionPayout.append(game.genVecPayout(validAnswer, question))
 
-        objectifFunction = 1 / 4 * np.array(objectifFunctionPayout).transpose()
+        objectifFunction = self.game.questionDistribution * np.array(objectifFunctionPayout).transpose()
 
         return objectifFunction
 
