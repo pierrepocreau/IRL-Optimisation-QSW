@@ -36,7 +36,6 @@ def graph(points):
 
     print("Avec contrainte de Nash")
     prob.nashEquilibriumConstraint()
-    prob.updateProb()
 
     for idx, v0 in enumerate(x):
         print("iteration {}".format(idx))

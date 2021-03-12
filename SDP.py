@@ -23,7 +23,6 @@ class SDP:
     def updateProb(self):
         self.prob = cp.Problem(cp.Maximize(cp.sum(self.X[0] @ cp.bmat(self.objectifFunc))), self.constraints)
 
-
     def init_variables(self):
         matrix = self.projectorConstraints()
         variablesDict = {}
@@ -90,6 +89,8 @@ class SDP:
 
                     payoutVecNot = self.game.questionDistribution * np.array(payoutVecNot).transpose()
                     self.constraints.append(cp.sum(self.X[0] @ cp.bmat((payoutVec - payoutVecNot))) >= 0)
+
+        self.updateProb()
 
     def objectifFunctions(self, game):
         objectifFunctionPayout = []
