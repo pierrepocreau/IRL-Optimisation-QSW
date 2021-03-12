@@ -13,12 +13,31 @@ class SDP:
         self.variablePosition = {}
 
         self.constraints = []
-        self.X = cp.Variable((self.n, self.n), PSD=True) #Specifiying the constraint here divided by 2 the number of variables
-        #self.constraints += [self.X == self.X.T] #Symmetric constraint already created by PSD
-        #self.constraints += [self.X >> 0] #SDP
+        self.X = cp.bmat(self.init_variables())
+        self.constraints += [self.X >> 0] #SDP
         self.constraints += [self.X[0][0] == 1] #Normalization
 
         self.objectifFunc = self.objectifFunctions(game)
+        self.prob = cp.Problem(cp.Maximize(cp.sum(self.X[0] @ cp.bmat(self.objectifFunc))), self.constraints)
+
+    def updateProb(self):
+        self.prob = cp.Problem(cp.Maximize(cp.sum(self.X[0] @ cp.bmat(self.objectifFunc))), self.constraints)
+
+    def init_variables(self):
+        matrix = self.projectorConstraints()
+        variablesDict = {}
+        variable = [[None for i in range(self.n)] for j in range(self.n)]
+
+        for line in range(self.n):
+            for column in range(self.n):
+
+                varId = matrix[line][column]
+                if varId not in variablesDict:
+                    variablesDict[varId] = cp.Variable()
+
+                variable[line][column] = variablesDict[varId]
+
+        return variable
 
     def projectorConstraints(self):
         '''
@@ -29,23 +48,16 @@ class SDP:
 
         for i, Si in enumerate(self.S):
             for j, Sj in enumerate(self.S):
+                var = Variable(self.S, i, j, self.game.operatorsPlayers)
 
-                if (i <= j): #Only half the matrix is important
-                    var = Variable(self.S, i, j, self.game.operatorsPlayers)
+                if var not in self.variableDict:
+                    self.variableDict[var] = variableId
+                    self.variablePosition[variableId] = (i, j)
+                    variableId += 1
 
-                    if var not in self.variableDict:
+                matrix[i][j] = self.variableDict[var]
 
-                        self.variableDict[var] = variableId
-                        self.variablePosition[variableId] = (i, j)
-                        variableId += 1
-
-                    matrix[i][j] = self.variableDict[var]
-
-                    line, column = self.variablePosition[self.variableDict[var]]
-                    if (i, j) != (line, column):
-                        self.constraints += [self.X[i][j] == self.X[line][column]]
-
-        return matrix #CVXPY can't create a set of variable from a matrix, so this return is useless
+        return matrix
 
 
     def nashEquilibriumConstraint(self):
@@ -76,7 +88,9 @@ class SDP:
                             payoutVecNot.append(self.game.genVecPlayerNotPayout(validAnswer, question, playerId))
 
                     payoutVecNot = self.game.questionDistribution * np.array(payoutVecNot).transpose()
-                    self.constraints.append(cp.sum(self.X[0] @ (payoutVec - payoutVecNot)) >= 0)
+                    self.constraints.append(cp.sum(self.X[0] @ cp.bmat((payoutVec - payoutVecNot))) >= 0)
+
+        self.updateProb()
 
     def objectifFunctions(self, game):
         objectifFunctionPayout = []
@@ -89,7 +103,6 @@ class SDP:
 
         return objectifFunction
 
-    def optimize(self, verbose):
-        prob = cp.Problem(cp.Maximize(cp.sum(self.X[0] @ self.objectifFunc)), self.constraints)
-        prob.solve(verbose=verbose,solver=cp.SCS)
-        return prob.value
+    def optimize(self, verbose, warmStart):
+        self.prob.solve(solver=cp.SCS, verbose=verbose, warm_start=warmStart)
+        return self.prob.value
