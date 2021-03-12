@@ -31,7 +31,7 @@ def graph(points):
         qswGraphState = (v0 + v1) / 2
 
         paramV0.value = v0
-        qsw = prob.optimize(verbose=False, warmStart=False)
+        qsw = prob.optimize(verbose=False, warmStart=True)
         QSW_notNash.append(qsw - qswGraphState)
 
     print("Avec contrainte de Nash")
@@ -42,7 +42,7 @@ def graph(points):
         qswGraphState = (v0 + v1) / 2
 
         paramV0.value = v0
-        qsw = prob.optimize(verbose=True, warmStart=False)
+        qsw = prob.optimize(verbose=False, warmStart=True)
         QSW_Nash.append(qsw - qswGraphState)
 
     plt.plot(x, QSW_Nash, label="QSW + Nash constraint")
