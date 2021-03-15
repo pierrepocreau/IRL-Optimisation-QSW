@@ -52,7 +52,7 @@ class Test(unittest.TestCase):
         P3 = [operatorsP1, operatorsP2, operatorsP3]
         game = Game(nbPlayers, v0, v1, P3)
 
-        questions = list(game.questions())
+        questions = list(game.questions)
         self.assertIn("111", questions)
         self.assertIn("100", questions)
         self.assertIn("010", questions)
@@ -68,7 +68,7 @@ class Test(unittest.TestCase):
         P3 = [operatorsP1, operatorsP2, operatorsP3]
         game = Game(nbPlayers, v0, v1, P3)
 
-        questions = list(game.questions())
+        questions = list(game.questions)
 
         self.assertIn("111", questions)
         answer111 = list(game.validAnswerIt("111"))
@@ -122,6 +122,45 @@ class Test(unittest.TestCase):
         correct[game.S.index([1, 4, 5])] = +1
 
         self.assertListEqual(encodingVec, correct)
+
+    def testSymQuestion(self):
+        operatorsP1 = [0, 1, 2]
+        operatorsP2 = [0, 3, 4]
+        operatorsP3 = [0, 5, 6]
+        operatorsP4 = [0, 7, 8]
+        operatorsP5 = [0, 9, 10]
+        P5 = [operatorsP1, operatorsP2, operatorsP3, operatorsP4, operatorsP5]
+        nbPlayers = 5
+        v0, v1 = 0, 0
+        game = Game(nbPlayers, v0, v1, P5, sym=True)
+
+        self.assertIn("10100", game.questions)
+        self.assertIn("01010", game.questions)
+        self.assertIn("00101", game.questions)
+        self.assertIn("10010", game.questions)
+        self.assertIn("01001", game.questions)
+        self.assertIn("11111", game.questions)
+        print(len(list(game.questions)))
+        self.assertEqual(len(list(game.questions)), nbPlayers + 1)
+
+    def testSymAnswers(self):
+        operatorsP1 = [0, 1, 2]
+        operatorsP2 = [0, 3, 4]
+        operatorsP3 = [0, 5, 6]
+        operatorsP4 = [0, 7, 8]
+        operatorsP5 = [0, 9, 10]
+        P5 = [operatorsP1, operatorsP2, operatorsP3, operatorsP4, operatorsP5]
+        nbPlayers = 5
+        v0, v1 = 0, 0
+        gameSym = Game(nbPlayers, v0, v1, P5, sym=True)
+        gameClassic = Game(nbPlayers, v0, v1, P5, sym=False)
+        for questionSym, questionClassic in zip(gameSym.questions, gameClassic.questions):
+            for answerSym, answerClassic in zip(gameSym.validAnswerIt(questionSym), gameClassic.validAnswerIt(questionClassic)):
+                self.assertEqual(answerSym, answerClassic)
+
+
+
+
 
 if __name__ == "__main__":
     unittest.main()
