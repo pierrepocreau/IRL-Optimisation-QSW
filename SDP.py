@@ -67,7 +67,7 @@ class SDP:
         for playerId in range(self.game.nbPlayers):
 
             payoutVec = []  # Payout if he follow advice
-            for question in self.game.questions():
+            for question in self.game.questions:
                 for validAnswer in self.game.validAnswerIt(question):
                     payoutVec.append(self.game.genVecPlayerPayout(validAnswer, question, playerId))
 
@@ -77,7 +77,7 @@ class SDP:
             for type in ['0', '1']:
                 for noti in ['0', '1']:
                     payoutVecNot = []
-                    for question in self.game.questions():
+                    for question in self.game.questions:
                         stillValid = lambda answer: question[playerId] != type or answer[playerId] != noti
                         nowValid = lambda answer: question[playerId] == type and answer[playerId] == noti
 
@@ -95,7 +95,7 @@ class SDP:
     def objectifFunctions(self, game):
         objectifFunctionPayout = []
 
-        for question in game.questions():
+        for question in game.questions:
             for validAnswer in game.validAnswerIt(question):
                 objectifFunctionPayout.append(game.genVecPayout(validAnswer, question))
 

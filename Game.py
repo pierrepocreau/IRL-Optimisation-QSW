@@ -3,7 +3,7 @@ import numpy as np
 
 class Game:
 
-    def __init__(self, nbPlayers, v0, v1, operatorsPlayers):
+    def __init__(self, nbPlayers, v0, v1, operatorsPlayers, sym=False):
         assert(nbPlayers == 3 or nbPlayers == 5)
         self.nbPlayers = nbPlayers
         self.operatorsPlayers = operatorsPlayers
@@ -12,12 +12,25 @@ class Game:
         self.v1 = v1
         self.questionDistribution = 1/(self.nbPlayers + 1)
 
-    def questions(self):
+
+        self.questions = list(self.questionsClassic())
+        if sym:
+            self.questions = list(self.questionsSym())
+
+    def questionsClassic(self):
         """
         Generator on all question.
         """
         for i in range(self.nbPlayers):
             yield '0' * i + '1' + '0' * (self.nbPlayers - 1 - i)
+
+        yield '1' * self.nbPlayers
+
+    def questionsSym(self):
+        for i in range(self.nbPlayers):
+            secondOne = (i + 2) % self.nbPlayers
+            i, secondOne = min(i, secondOne), max(i, secondOne)
+            yield '0' * i + '1' + '0' * (secondOne - i - 1) + '1' + '0' * (self.nbPlayers - secondOne - 1)
 
         yield '1' * self.nbPlayers
 
@@ -29,6 +42,12 @@ class Game:
         #Otherwise, only one plauer receives type 1. An answer is correct when the sum of his answer and those of its
         #neighbors is even.
         playedType1 = question.index('1')
+
+        # Symmetric question
+        if question.count("1") == 2:
+            if question[playedType1 + 2] != "1":
+                playedType1 += 3
+
         involvedPlayers = [(playedType1 - 1) % self.nbPlayers, playedType1, (playedType1 + 1) % self.nbPlayers]
 
         parity = sum([int(answer[idx]) for idx in involvedPlayers]) % 2

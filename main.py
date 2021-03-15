@@ -16,10 +16,10 @@ nbPlayers = 5
 v0 = cp.Parameter()
 v1 = cp.Parameter()
 
-game = Game(nbPlayers, v0, v1, P5) #To solve the 5 player version, change nbPlayers and P3 to P5
+game = Game(nbPlayers, v0, v1, P5, sym=True) #To solve the 5 player version, change nbPlayers and P3 to P5
 
 prob = SDP(game)
-prob.nashEquilibriumConstraint()
+#prob.nashEquilibriumConstraint()
 v0.value = 2/3
 v1.value = 1
 qsw = prob.optimize(verbose=True, warmStart=False)
