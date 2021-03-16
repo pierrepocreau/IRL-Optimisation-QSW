@@ -12,10 +12,13 @@ class Game:
         self.v1 = v1
         self.questionDistribution = 1/(self.nbPlayers + 1)
 
+        self.sym = sym
 
-        self.questions = list(self.questionsClassic())
-        if sym:
-            self.questions = list(self.questionsSym())
+    def questions(self):
+        if self.sym:
+            return self.questionsSym()
+        else:
+            return self.questionsClassic()
 
     def questionsClassic(self):
         """

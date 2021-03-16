@@ -52,7 +52,7 @@ class Test(unittest.TestCase):
         P3 = [operatorsP1, operatorsP2, operatorsP3]
         game = Game(nbPlayers, v0, v1, P3)
 
-        questions = list(game.questions)
+        questions = list(game.questions())
         self.assertIn("111", questions)
         self.assertIn("100", questions)
         self.assertIn("010", questions)
@@ -68,7 +68,7 @@ class Test(unittest.TestCase):
         P3 = [operatorsP1, operatorsP2, operatorsP3]
         game = Game(nbPlayers, v0, v1, P3)
 
-        questions = list(game.questions)
+        questions = list(game.questions())
 
         self.assertIn("111", questions)
         answer111 = list(game.validAnswerIt("111"))
@@ -134,14 +134,13 @@ class Test(unittest.TestCase):
         v0, v1 = 0, 0
         game = Game(nbPlayers, v0, v1, P5, sym=True)
 
-        self.assertIn("10100", game.questions)
-        self.assertIn("01010", game.questions)
-        self.assertIn("00101", game.questions)
-        self.assertIn("10010", game.questions)
-        self.assertIn("01001", game.questions)
-        self.assertIn("11111", game.questions)
-        print(len(list(game.questions)))
-        self.assertEqual(len(list(game.questions)), nbPlayers + 1)
+        self.assertIn("10100", game.questions())
+        self.assertIn("01010", game.questions())
+        self.assertIn("00101", game.questions())
+        self.assertIn("10010", game.questions())
+        self.assertIn("01001", game.questions())
+        self.assertIn("11111", game.questions())
+        self.assertEqual(len(list(game.questions())), nbPlayers + 1)
 
     def testSymAnswers(self):
         operatorsP1 = [0, 1, 2]
@@ -154,7 +153,7 @@ class Test(unittest.TestCase):
         v0, v1 = 0, 0
         gameSym = Game(nbPlayers, v0, v1, P5, sym=True)
         gameClassic = Game(nbPlayers, v0, v1, P5, sym=False)
-        for questionSym, questionClassic in zip(gameSym.questions, gameClassic.questions):
+        for questionSym, questionClassic in zip(gameSym.questions(), gameClassic.questions()):
             for answerSym, answerClassic in zip(gameSym.validAnswerIt(questionSym), gameClassic.validAnswerIt(questionClassic)):
                 self.assertEqual(answerSym, answerClassic)
 
