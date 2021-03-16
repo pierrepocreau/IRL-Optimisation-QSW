@@ -5,9 +5,7 @@ def opToPlayer(op, operatorsPlayers):
     Return the player Id with which the operator is associated.
     """
     assert(op != 0) #Id operator associated to every player.
-    for i, operators in enumerate(operatorsPlayers):
-        if op in operators:
-            return i
+    return (op - 1) // 2
 
 class Variable:
 
