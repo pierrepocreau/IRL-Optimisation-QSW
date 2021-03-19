@@ -72,7 +72,7 @@ class SDP:
             payoutVec = []  # Payout if he follow advice
             for question in self.game.questions():
                 for validAnswer in self.game.validAnswerIt(question):
-                    payoutVec.append(self.game.genVecPlayerPayout(validAnswer, question, playerId))
+                    payoutVec.append(self.genVecPlayerPayout(validAnswer, question, playerId))
 
             payoutVec = self.game.questionDistribution * np.array(payoutVec).transpose()
 
@@ -85,10 +85,10 @@ class SDP:
                         nowValid = lambda answer: question[playerId] == type and answer[playerId] == noti
 
                         for validAnswer in filter(stillValid, self.game.validAnswerIt(question)):
-                            payoutVecNot.append(self.game.genVecPlayerPayout(validAnswer, question, playerId))
+                            payoutVecNot.append(self.genVecPlayerPayout(validAnswer, question, playerId))
 
                         for validAnswer in filter(nowValid, self.game.wrongAnswerIt(question)):
-                            payoutVecNot.append(self.game.genVecPlayerNotPayout(validAnswer, question, playerId))
+                            payoutVecNot.append(self.genVecPlayerNotPayout(validAnswer, question, playerId))
 
                     payoutVecNot = self.game.questionDistribution * np.array(payoutVecNot).transpose()
                     self.constraints.append(cp.sum(self.X[0] @ cp.bmat((payoutVec - payoutVecNot))) >= 0)

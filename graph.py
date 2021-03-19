@@ -19,9 +19,10 @@ def graph(points):
     nbPlayers = 3
     v1 = 1
     paramV0 = cp.Parameter()
-    game = Game(nbPlayers, paramV0, v1, P3)
-    prob = SDP(game)
+    game = Game(nbPlayers, paramV0, v1)
+    prob = SDP(game, P3)
 
+    QSW_GraphState = []
     QSW_Nash = []
     QSW_notNash = []
 
@@ -29,10 +30,10 @@ def graph(points):
     for idx, v0 in enumerate(x):
         print("iteration {}".format(idx))
         qswGraphState = (v0 + v1) / 2
-
+        QSW_GraphState.append(qswGraphState)
         paramV0.value = v0
         qsw = prob.optimize(verbose=False, warmStart=True)
-        QSW_notNash.append(qsw - qswGraphState)
+        QSW_notNash.append(qsw)
 
     print("Avec contrainte de Nash")
     prob.nashEquilibriumConstraint()
@@ -43,7 +44,19 @@ def graph(points):
 
         paramV0.value = v0
         qsw = prob.optimize(verbose=False, warmStart=True)
-        QSW_Nash.append(qsw - qswGraphState)
+        QSW_Nash.append(qsw)
+
+    with open('QSW_25Points_SDP_WithoutNash.txt', 'w') as f:
+        for item in QSW_notNash:
+            f.write("%s\n" % item)
+
+    with open('QSW_25Points_GraphState.txt', 'w') as f:
+        for item in QSW_GraphState:
+            f.write("%s\n" % item)
+
+    with open('QSW_25Points_SDP_WithNash.txt', 'w') as f:
+        for item in QSW_Nash:
+            f.write("%s\n" % item)
 
     plt.plot(x, QSW_Nash, label="QSW + Nash constraint")
     plt.plot(x, QSW_notNash, label="QSW without Nash constraint")
@@ -54,6 +67,6 @@ def graph(points):
     plt.show()
 
 start = time.time()
-graph(100)
+graph(25)
 end = time.time()
 print("time {}".format(end - start))

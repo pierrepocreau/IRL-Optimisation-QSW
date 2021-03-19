@@ -3,6 +3,7 @@ import cvxpy as cp
 from Game import Game
 from toqitoRandomPovm import random_povm
 from time import time
+import matplotlib.pyplot as plt
 
 class SeeSaw:
 
@@ -15,6 +16,7 @@ class SeeSaw:
 
         self.playersOps = self.operators()
         self.rho = self.genRho()
+        self.QSW = 0
 
     def probaPlayer(self, answer, question, playerId, vars):
         '''
@@ -128,9 +130,9 @@ class SeeSaw:
         for type in ["0", "1"]:
             for answer in ["0", "1"]:
                 #We must create a matrix by hand, cp.Variabel((2,2)) can't be used as first arguement of cp.kron(a, b) or np.kron(a, b)
-                var = [[cp.Variable(), cp.Variable()], [cp.Variable(), cp.Variable()]]
+                varMatrix = cp.Variable((2, 2), PSD=True)
+                var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
                 varDict[answer + type] = np.array(var)
-                constraints += [cp.bmat(var) >> 0]
 
         constraints += [cp.bmat(varDict["00"] + varDict["10"]) == np.eye(2)]
         constraints += [cp.bmat(varDict["01"] + varDict["11"]) == np.eye(2)]
@@ -141,8 +143,8 @@ class SeeSaw:
         objectif = cp.Constant(0)
         winrate = cp.Constant(0)
         playerPayout = cp.Constant(0)
-        for question in game.questions():
-            for answer in game.validAnswerIt(question):
+        for question in self.game.questions():
+            for answer in self.game.validAnswerIt(question):
                 proba = self.probaPlayer(answer, question, playerId, varDict)
                 objectif += 1/4 * self.game.answerPayout(answer) * proba
                 playerPayout += 1/4 * self.game.playerPayout(answer, playerId) * proba
@@ -154,10 +156,10 @@ class SeeSaw:
             sdp = cp.Problem(cp.Maximize(objectif), constraints)
 
 
-        sdp.solve(solver=cp.MOSEK, verbose=False)
-        print("QSW: " + str(sdp.value))
-        print("Winrate {} Payout {} player payout {}".format(str(winrate.value), str(objectif.value), str(playerPayout.value)))
-
+        sdp.solve(solver=cp.SCS, verbose=False)
+        #print("QSW: " + str(sdp.value))
+        #print("Winrate {} Payout {} player payout {}".format(str(winrate.value), str(objectif.value), str(playerPayout.value)))
+        self.QSW = objectif.value
 
         #To print each p(a|t) after optim.
         #for question in game.questions():
@@ -175,18 +177,55 @@ class SeeSaw:
 
         objectif = cp.Constant(0)
         winrate = cp.Constant(0)
-        for question in game.questions():
-            for answer in game.validAnswerIt(question):
+        for question in self.game.questions():
+            for answer in self.game.validAnswerIt(question):
                 proba = self.probaRho(answer, question, rho)
                 objectif += 1/4 * self.game.answerPayout(answer) * proba
                 winrate  += 1/4 * proba
 
         sdp = cp.Problem(cp.Maximize(objectif), constraints)
         sdp.solve(solver=cp.MOSEK, verbose=False)
-        print("Winrate {} QSW {} ".format(str(winrate.value), str(sdp.value)))
+        #print("Winrate {} QSW {} ".format(str(winrate.value), str(sdp.value)))
 
         #Update rho
         self.rho = rho.value
+
+def graph(points):
+    x = np.linspace(0, 1, points)
+    QSW = []
+
+    v1 = 1
+    nbPlayers = 3
+
+    nbIterations = 30
+    nbRepeat = 5
+    print(len(x))
+    for it, v0 in enumerate(x):
+        print("\nIteration {}".format(it))
+        maxQsw = 0
+
+        for r in range(nbRepeat):
+            print("nbRepeat {}".format(r))
+            game = Game(nbPlayers, v0, v1, sym=False)
+            seeSaw = SeeSaw(nbPlayers, game)
+            for i in range(nbIterations):
+                print("Playerit {}".format(i))
+                Qeq = i >= nbIterations - 10
+                if not Qeq: seeSaw.sdpRho()
+                for player in range(game.nbPlayers):
+                    seeSaw.sdpPlayer(player, Qeq)
+                print("QSW {}".format(seeSaw.QSW))
+
+            maxQsw = max(maxQsw, seeSaw.QSW)
+        print("Max QSW {}".format(maxQsw))
+        QSW.append(maxQsw)
+    plt.plot(x, QSW)
+    plt.show()
+    return QSW
+
+
+
+
 
 
 
@@ -208,15 +247,16 @@ if __name__ == "__main__":
                 print("\n")
 
 
-    nbIterations = 20
+    nbIterations = 40
     for i in range(nbIterations):
         print("\niteration {}".format(i))
         print("Optimisation de rho")
-        Qeq = i >= nbIterations - 7
+        Qeq = (i >=  13 and i <= 20) or (i >=  33)
         if not Qeq: seeSaw.sdpRho()
         for player in range(game.nbPlayers):
             print("player {}".format(player))
             sdp = seeSaw.sdpPlayer(player, Qeq)
+        print("QSW {}".format(seeSaw.QSW))
 
     print("Etat final")
     print(seeSaw.rho)
