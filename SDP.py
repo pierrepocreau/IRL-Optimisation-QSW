@@ -169,5 +169,5 @@ class SDP:
         return objectifFunction
 
     def optimize(self, verbose, warmStart):
-        self.prob.solve(solver=cp.SCS, verbose=verbose, warm_start=warmStart)
+        self.prob.solve(solver=cp.MOSEK, verbose=verbose, warm_start=warmStart)
         return self.prob.value
