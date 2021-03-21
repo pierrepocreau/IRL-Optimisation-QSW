@@ -37,7 +37,8 @@ class SeeSaw:
                 matrix = np.kron(matrix, self.playersOps[str(player) + opId])
 
         b = time()
-        trace = np.trace(self.rho @ matrix)
+        matrix = cp.bmat(matrix)
+        trace = cp.trace(self.rho @ matrix)
         c = time()
         #print("temps produit tensoriel {} multiplication {}".format(b -a, c - b))
         return trace
@@ -70,20 +71,15 @@ class SeeSaw:
         print("Max diff between old POVMs and new {}".format(dist))
 
     def operators(self):
-
+        '''
+        Initialise each player with random POVMs
+        '''
         opDict = {}
         for playerId in range(self.nbJoueurs):
-            #Je comprend pas vraiment ces paramètres, et pourquoi on obtient 4 matrices.
             povms = random_povm(2, 2, 2) #dim = 2, nbInput = 2, nbOutput = 2
-
             for type in ["0", "1"]:
                 for answer in ["0", "1"]:
-                    #povms[:, :, int(type), int(answer)][0, 1] = 0
-                    #povms[:, :, int(type), int(answer)][1, 0] = 0
-
                     opDict[str(playerId) + answer + type] = povms[:, :, int(type), int(answer)].real
-
-                print(opDict[str(playerId) + "0" + type] + opDict[str(playerId) + "1" + type])
 
         return opDict
 
@@ -129,42 +125,34 @@ class SeeSaw:
 
         for type in ["0", "1"]:
             for answer in ["0", "1"]:
-                #We must create a matrix by hand, cp.Variabel((2,2)) can't be used as first arguement of cp.kron(a, b) or np.kron(a, b)
                 varMatrix = cp.Variable((2, 2), PSD=True)
+                #We must create a matrix by hand, cp.Variabel((2,2)) can't be used as first arguement of cp.kron(a, b) or np.kron(a, b)
                 var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
                 varDict[answer + type] = np.array(var)
 
         constraints += [cp.bmat(varDict["00"] + varDict["10"]) == np.eye(2)]
         constraints += [cp.bmat(varDict["01"] + varDict["11"]) == np.eye(2)]
 
-        if False:
-            constraints += self.corrQConstraints(playerId, varDict)
-
-        objectif = cp.Constant(0)
-        winrate = cp.Constant(0)
+        socialWelfare = cp.Constant(0)
         playerPayout = cp.Constant(0)
+        winrate = cp.Constant(0)
+
         for question in self.game.questions():
             for answer in self.game.validAnswerIt(question):
                 proba = self.probaPlayer(answer, question, playerId, varDict)
-                objectif += 1/4 * self.game.answerPayout(answer) * proba
+                socialWelfare += 1/4 * self.game.answerPayout(answer) * proba
                 playerPayout += 1/4 * self.game.playerPayout(answer, playerId) * proba
                 winrate += 1/4 * proba
 
         if Qeq:
             sdp = cp.Problem(cp.Maximize(playerPayout), constraints)
         else:
-            sdp = cp.Problem(cp.Maximize(objectif), constraints)
+            sdp = cp.Problem(cp.Maximize(socialWelfare), constraints)
 
 
-        sdp.solve(solver=cp.SCS, verbose=False)
-        #print("QSW: " + str(sdp.value))
-        #print("Winrate {} Payout {} player payout {}".format(str(winrate.value), str(objectif.value), str(playerPayout.value)))
-        self.QSW = objectif.value
+        sdp.solve(solver=cp.MOSEK, verbose=False)
+        self.QSW = socialWelfare.value
 
-        #To print each p(a|t) after optim.
-        #for question in game.questions():
-        #    for answer in game.validAnswerIt(question):
-        #        print("answer {} question {} proba {}".format(answer, question, self.probaPlayer(answer, question, playerId, varDict).value))
 
         self.update(playerId, varDict)
 
@@ -173,7 +161,6 @@ class SeeSaw:
         n = 2**self.nbJoueurs
         rho = cp.Variable((n, n), PSD=True)
         constraints += [cp.trace(rho) == 1]
-
 
         objectif = cp.Constant(0)
         winrate = cp.Constant(0)
@@ -185,7 +172,6 @@ class SeeSaw:
 
         sdp = cp.Problem(cp.Maximize(objectif), constraints)
         sdp.solve(solver=cp.MOSEK, verbose=False)
-        #print("Winrate {} QSW {} ".format(str(winrate.value), str(sdp.value)))
 
         #Update rho
         self.rho = rho.value
