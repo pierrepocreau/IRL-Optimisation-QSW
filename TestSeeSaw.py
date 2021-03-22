@@ -3,8 +3,8 @@ from itertools import product
 import unittest
 import numpy as np
 from Game import Game
-from SDP import SDP
-from SeeSaw import graph
+from SeeSaw import SeeSaw
+import matplotlib.pyplot as plt
 
 from time import time
 import cvxpy as cp
@@ -33,11 +33,45 @@ class Test(unittest.TestCase):
         print("temps multiplication classique {} multiplication Variable(n,n) cvxpy {} multiplication matrices 'fait main' {} avec bmat {}".format(t2 - t1, t3 - t2, t4 - t3, t5 - t4))
 
     def testGrpah(self):
-        qsw = graph(25)
-        with open('QSW_25Points_SeeSaw.txt', 'w') as f:
+        qsw = self.graph(25)
+        with open('QSW_25Points_0-04_SeeSaw.txt', 'w') as f:
             for item in qsw:
                 f.write("%s\n" % item)
 
+    def graph(self, points):
+        x = np.linspace(0, 1, points)
+        QSW = []
+
+        v1 = 1
+        nbPlayers = 3
+
+        nbIterations = 20
+        nbRepeat = 3
+        print(len(x))
+        for it, v0 in enumerate(x):
+            print("\nIteration {}".format(it))
+            maxQsw = 0
+
+            for r in range(nbRepeat):
+                print("nbRepeat {}".format(r))
+                game = Game(nbPlayers, v0, v1, sym=False)
+                seeSaw = SeeSaw(nbPlayers, game)
+                for i in range(nbIterations):
+
+                    print("\nPlayerit {}".format(i))
+                    Qeq = i >= nbIterations - 8
+                    seeSaw.sdpRho()
+                    for player in range(game.nbPlayers):
+                        seeSaw.sdpPlayer(player, Qeq)
+                    print("QSW {}".format(seeSaw.QSW))
+                    print("Winrate {}".format(seeSaw.winrate))
+
+                maxQsw = max(maxQsw, seeSaw.QSW)
+            print("Max QSW {}".format(maxQsw))
+            QSW.append(maxQsw)
+        plt.plot(x, QSW)
+        plt.show()
+        return QSW
 
 
 if __name__ == "__main__":

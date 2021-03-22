@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from Game import Game
 from SDP import SDP
-import time
+from time import time
 import cvxpy as cp
 
 def graph(points):
@@ -16,11 +16,11 @@ def graph(points):
     P5 = [operatorsP1, operatorsP2, operatorsP3, operatorsP4, operatorsP5]
     x = np.linspace(0, 1, points)
 
-    nbPlayers = 3
+    nbPlayers = 5
     v1 = 1
     paramV0 = cp.Parameter()
     game = Game(nbPlayers, paramV0, v1)
-    prob = SDP(game, P3)
+    prob = SDP(game, P5)
 
     QSW_GraphState = []
     QSW_Nash = []
@@ -32,8 +32,8 @@ def graph(points):
         qswGraphState = (v0 + v1) / 2
         QSW_GraphState.append(qswGraphState)
         paramV0.value = v0
-        qsw = prob.optimize(verbose=False, warmStart=True)
-        QSW_notNash.append(qsw)
+        #qsw = prob.optimize(verbose=False, warmStart=True)
+        #QSW_notNash.append(qsw)
 
     print("Avec contrainte de Nash")
     prob.nashEquilibriumConstraint()
@@ -43,7 +43,10 @@ def graph(points):
         qswGraphState = (v0 + v1) / 2
 
         paramV0.value = v0
+        a = time()
         qsw = prob.optimize(verbose=False, warmStart=True)
+        b = time()
+        print("temps optimisation {}".format(b -a ))
         QSW_Nash.append(qsw)
 
     with open('QSW_25Points_SDP_WithoutNash.txt', 'w') as f:
@@ -66,7 +69,7 @@ def graph(points):
 
     plt.show()
 
-start = time.time()
+start = time()
 graph(25)
-end = time.time()
+end = time()
 print("time {}".format(end - start))
