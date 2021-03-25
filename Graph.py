@@ -15,12 +15,13 @@ def readFile(file):
     return data
 
 
-def graph(points, nbPlayers, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshold=0.4):
+def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshold=0.4):
 
     operatorsP1 = [0, 1, 2]
     operatorsP2 = [0, 3, 4]
     operatorsP3 = [0, 5, 6]
     operatorsP4 = [0, 7, 8]
+    operatorsP5 = [0, 9, 10]
     operatorsP5 = [0, 9, 10]
 
     P3 = [operatorsP1, operatorsP2, operatorsP3]
@@ -33,7 +34,7 @@ def graph(points, nbPlayers, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshol
 
     v1 = 1
     paramV0 = cp.Parameter()
-    game = Game(nbPlayers, paramV0, v1, sym=False)
+    game = Game(nbPlayers, paramV0, v1, sym)
     prob = SDP(game, P)
 
 
@@ -43,7 +44,7 @@ def graph(points, nbPlayers, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshol
     QSW_SeeSaw = []
 
     try :
-        QSW_GraphState = readFile('{}Players_{}Points_GraphState.txt'.format(nbPlayers, points))
+        QSW_GraphState = readFile('data/{}Players_{}Points_GraphState.txt'.format(nbPlayers, points))
     except:
         print("GraphState")
         for idx, v0 in enumerate(x):
@@ -51,31 +52,32 @@ def graph(points, nbPlayers, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshol
             qswGraphState = (v0 + v1) / 2
             QSW_GraphState.append(qswGraphState)
 
-            with open('{}Players_{}Points_GraphState.txt'.format(nbPlayers, points), 'w') as f:
+            with open('data/{}Players_{}Points_GraphState.txt'.format(nbPlayers, points), 'w') as f:
                 for item in QSW_GraphState:
                     f.write("%s\n" % item)
 
 
     try:
-        QSW_NotNash = readFile('{}Players_{}Points_HierarchieNoNash.txt'.format(nbPlayers, points))
+
+        QSW_NotNash = readFile('data/{}Players_{}Points_HierarchieNoNash.txt'.format(nbPlayers, points))
 
     except:
-        print("Sans contrainte de Nash")
+        print("Hierarchie Sans contrainte de Nash")
         for idx, v0 in enumerate(x):
             print("iteration {}".format(idx))
             paramV0.value = v0
             qsw = prob.optimize(verbose=False, warmStart=True)
             QSW_NotNash.append(qsw)
 
-        with open('{}Players_{}Points_HierarchieNoNash.txt'.format(nbPlayers, points), 'w') as f:
+        with open('data/{}Players_{}Points_HierarchieNoNash.txt'.format(nbPlayers, points), 'w') as f:
             for item in QSW_NotNash:
                 f.write("%s\n" % item)
 
 
     try:
-        QSW_Nash = readFile('{}Players_{}Points_HierarchieNash.txt'.format(nbPlayers, points))
+        QSW_Nash = readFile('data/{}Players_{}Points_HierarchieNash.txt'.format(nbPlayers, points))
     except:
-        print("Avec contrainte de Nash")
+        print("Hierarchie avec contrainte de Nash")
         prob.nashEquilibriumConstraint()
 
         for idx, v0 in enumerate(x):
@@ -84,12 +86,12 @@ def graph(points, nbPlayers, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshol
             qsw = prob.optimize(verbose=False, warmStart=True)
             QSW_Nash.append(qsw)
 
-        with open('{}Players_{}Points_HierarchieNash.txt'.format(nbPlayers, points), 'w') as f:
+        with open('data/{}Players_{}Points_HierarchieNash.txt'.format(nbPlayers, points), 'w') as f:
             for item in QSW_Nash:
                 f.write("%s\n" % item)
 
     try:
-        QSW_SeeSaw = readFile('{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points))
+        QSW_SeeSaw = readFile('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points))
 
     except:
         print("SeeSaw")
@@ -106,7 +108,7 @@ def graph(points, nbPlayers, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshol
 
             QSW_SeeSaw.append(maxQsw)
 
-        with open('{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points), 'w') as f:
+        with open('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points), 'w') as f:
             for item in QSW_SeeSaw:
                 f.write("%s\n" % item)
 
@@ -121,6 +123,13 @@ def graph(points, nbPlayers, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshol
     plt.show()
 
 if __name__ == '__main__':
-    graph(2, 3, 10, 3, 0.4)
+    nbPlayers = 3
+    sym=False #Sym for 5 players
+    points = 2
+    seeSawRepeatLow = 10
+    seeSawRepeatHigh = 3
+    treshold = 0.4
+
+    graph(nbPlayers, sym, points, seeSawRepeatLow, seeSawRepeatHigh, treshold)
 
 
