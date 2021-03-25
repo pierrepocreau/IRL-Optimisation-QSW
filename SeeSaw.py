@@ -2,6 +2,8 @@ import numpy as np
 import cvxpy as cp
 from toqitoRandomPovm import random_povm
 from Game import Game
+from toqito.channels import partial_trace
+from time import time
 
 
 class SeeSaw:
@@ -15,14 +17,15 @@ class SeeSaw:
         self.POVM_Dict = self.genPOVMs()
         self.rho = self.genRho()
         self.QSW = 0
+        self.lastDif = 10 # >0
 
     def genPOVMs(self):
         '''
         Initialise each player with random POVMs
         '''
         opDict = {}
+        povms = random_povm(2, 2, 2)  # dim = 2, nbInput = 2, nbOutput = 2
         for playerId in range(self.nbJoueurs):
-            povms = random_povm(2, 2, 2) #dim = 2, nbInput = 2, nbOutput = 2
             for type in ["0", "1"]:
                 for answer in ["0", "1"]:
                     opDict[str(playerId) + answer + type] = povms[:, :, int(type), int(answer)].real
@@ -39,21 +42,23 @@ class SeeSaw:
         '''
         Calculate the probability p(a|t) with playersId's POVMs being cvxpy vars.
         '''
+
         IdPOVM = answer[0] + question[0]
         if playerId == 0:
-            matrix = playerPOVM[IdPOVM]
+            matrix = np.eye(2)
         else:
             matrix = self.POVM_Dict["0" + IdPOVM]
 
         for player in range(1, self.nbJoueurs):
             IdPOVM = answer[player] + question[player]
             if player == playerId:
-                matrix = np.kron(matrix, playerPOVM[IdPOVM])
+                matrix = np.kron(matrix, np.eye(2))
             else:
                 matrix = np.kron(matrix, self.POVM_Dict[str(player) + IdPOVM])
 
-        matrix = cp.bmat(matrix)
-        trace = cp.trace(self.rho @ matrix)
+        matrix = self.rho @ matrix
+        matrix = partial_trace(matrix, [player+1 for player in range(self.nbJoueurs) if player != playerId], [2 for _ in range(self.nbJoueurs)])
+        trace = cp.trace(matrix @ playerPOVM[answer[playerId] + question[playerId]])
         return trace
 
     def probaRho(self, answer, question, rho):
@@ -68,7 +73,7 @@ class SeeSaw:
             opId = answer[player] + question[player]
             matrix = np.kron(matrix, self.POVM_Dict[str(player) + opId])
 
-        return cp.trace(rho @ cp.bmat(matrix))
+        return cp.trace(rho @ matrix)
 
 
     def update(self, playerId, playerPOVM):
@@ -78,11 +83,10 @@ class SeeSaw:
         dist = 0
         for type in ["0", "1"]:
             for answer in ["0", "1"]:
-                newOp = [[playerPOVM[answer + type][0][0].value, playerPOVM[answer + type][0][1].value], [playerPOVM[answer + type][1][0].value, playerPOVM[answer + type][1][1].value]]
-                dist = max(dist, np.linalg.norm(self.POVM_Dict[str(playerId) + answer + type] - newOp))
-                self.POVM_Dict[str(playerId) + answer + type] = np.array(newOp)
+                dist = max(dist, np.linalg.norm(self.POVM_Dict[str(playerId) + answer + type] - playerPOVM[answer + type].value))
+                self.POVM_Dict[str(playerId) + answer + type] = playerPOVM[answer + type].value
 
-        print("Max diff between old POVMs and new {}".format(dist))
+        #print("Max diff between old POVMs and new {}".format(dist))
 
 
     def sdpPlayer(self, playerId, Qeq):
@@ -98,7 +102,7 @@ class SeeSaw:
                 varMatrix = cp.Variable((2, 2), PSD=True)
                 #We must create a matrix by hand, cp.Variabel((2,2)) can't be used as first arguement of cp.kron(a, b) or np.kron(a, b)
                 var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
-                varDict[answer + type] = np.array(var)
+                varDict[answer + type] = varMatrix
 
         constraints += [cp.bmat(varDict["00"] + varDict["10"]) == np.eye(2)]
         constraints += [cp.bmat(varDict["01"] + varDict["11"]) == np.eye(2)]
@@ -110,9 +114,9 @@ class SeeSaw:
         for question in self.game.questions():
             for answer in self.game.validAnswerIt(question):
                 proba = self.probaPlayer(answer, question, playerId, varDict)
-                socialWelfare += 1/4 * self.game.answerPayout(answer) * proba
-                playerPayout += 1/4 * self.game.playerPayout(answer, playerId) * proba
-                winrate += 1/4 * proba
+                socialWelfare += self.game.questionDistribution * self.game.answerPayout(answer) * proba
+                playerPayout += self.game.questionDistribution * self.game.playerPayout(answer, playerId) * proba
+                winrate += self.game.questionDistribution * proba
 
         if Qeq:
             sdp = cp.Problem(cp.Maximize(playerPayout), constraints)
@@ -123,7 +127,9 @@ class SeeSaw:
         self.QSW = socialWelfare.value
         self.winrate = winrate.value
         self.update(playerId, varDict)
-        print("player payout {} updateDiff {}".format(playerPayout.value, playerPayout.value - self.playersPayout[playerId]))
+        self.lastDif = np.abs(playerPayout.value - self.playersPayout[playerId])
+        print("player payout {} updateDiff {}".format(playerPayout.value, self.lastDif))
+
         self.playersPayout[playerId] = playerPayout.value
 
     def sdpRho(self):
@@ -142,8 +148,8 @@ class SeeSaw:
         for question in self.game.questions():
             for answer in self.game.validAnswerIt(question):
                 proba = self.probaRho(answer, question, rho)
-                socialWelfaire += 1/4 * self.game.answerPayout(answer) * proba
-                winrate  += 1/4 * proba
+                socialWelfaire += self.game.questionDistribution * self.game.answerPayout(answer) * proba
+                winrate += self.game.questionDistribution * proba
 
         sdp = cp.Problem(cp.Maximize(socialWelfaire), constraints)
         sdp.solve(solver=cp.MOSEK, verbose=False)
