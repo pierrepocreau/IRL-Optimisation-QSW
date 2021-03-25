@@ -33,7 +33,7 @@ def graph(points, nbPlayers, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshol
 
     v1 = 1
     paramV0 = cp.Parameter()
-    game = Game(nbPlayers, paramV0, v1)
+    game = Game(nbPlayers, paramV0, v1, sym=False)
     prob = SDP(game, P)
 
 
