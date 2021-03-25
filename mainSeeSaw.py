@@ -1,6 +1,7 @@
 from Game import Game
 from SeeSaw import SeeSaw
 import numpy as np
+import random
 
 def printPOVMS(seeSaw):
     for id in range(seeSaw.game.nbPlayers):
@@ -11,32 +12,49 @@ def printPOVMS(seeSaw):
                 print("\n")
 
 def seeSawIteration(seeSaw, QeqFlag):
+    maxDif = 0
     if not QeqFlag:
         print("Optimisation de rho")
         seeSaw.sdpRho()
     else:
         print("Optimisation du gain de chaque joueur.")
-    for player in range(seeSaw.game.nbPlayers):
+
+    #optimOrder = list(range(seeSaw.nbJoueurs))
+    #random.shuffle(optimOrder)
+    optimOrder = range(seeSaw.nbJoueurs)
+
+    for player in optimOrder:
         print("player {}".format(player))
-        test = seeSaw.sdpPlayer(player, Qeq)
+        seeSaw.sdpPlayer(player, QeqFlag)
+        maxDif = max(maxDif, seeSaw.lastDif)
+
     print("QSW {}".format(seeSaw.QSW))
     print("Winrate {}".format(seeSaw.winrate))
+    return maxDif
+
+def fullSeeSaw(nbJoueurs, v0, v1, sym=False, treshold=10E-6):
+    game = Game(nbJoueurs, v0,v1, sym)
+    seeSaw = SeeSaw(nbJoueurs, game)
+
+    maxDif = 2
+    iteration = 1
+    while maxDif >= treshold:
+        print("\niteration {}".format(iteration))
+        maxDif = seeSawIteration(seeSaw, False)
+        iteration += 1
+
+        if iteration >= 30: return 0
+
+    maxDif = 2
+    while maxDif >= treshold:
+        print("\niteration {}".format(iteration))
+        maxDif = seeSawIteration(seeSaw, True)
+        iteration += 1
+
+        if iteration >= 60: return 0
 
 
-game = Game(3, 2/3, 1, False)
-seeSaw = SeeSaw(3, game)
-
-print("POVMs initiaux")
-printPOVMS(seeSaw)
-
-nbIterations = 20
-for i in range(nbIterations):
-    print("\niteration {}".format(i))
-    Qeq = (i >= 13 and i <= 20)
-    seeSawIteration(seeSaw, Qeq)
-print("Etat final")
+    return seeSaw.QSW
 
 
-print(seeSaw.rho)
-printPOVMS(seeSaw)
-
+#fullSeeSaw(5, 2/3, 1)
