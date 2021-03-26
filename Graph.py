@@ -99,11 +99,11 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         for it, v0 in enumerate(x):
             print("\nGlobal Iteration {}".format(it))
             maxQsw = 0
-            nbRepeat = seeSawRepeatLow * (v0 >= treshold) + seeSawRepeatHigh * (v0 < treshold)
+            nbRepeat = seeSawRepeatLow * (v0 < treshold) + seeSawRepeatHigh * (v0 >= treshold)
 
             for r in range(nbRepeat):
                 print("nbRepeat {}".format(r))
-                qsw = fullSeeSaw(nbPlayers, v0, v1)
+                qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1)
                 maxQsw = max(maxQsw, qsw)
 
             QSW_SeeSaw.append(maxQsw)
@@ -125,7 +125,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 if __name__ == '__main__':
     nbPlayers = 3
     sym=False #Sym for 5 players
-    points = 2
+    points = 25
     seeSawRepeatLow = 10
     seeSawRepeatHigh = 3
     treshold = 0.4

@@ -15,7 +15,8 @@ def seeSawIteration(seeSaw, QeqFlag):
     maxDif = 0
     if not QeqFlag:
         print("Optimisation de rho")
-        seeSaw.sdpRho()
+        rho = seeSaw.sdpRho()
+        seeSaw.updateRho(rho)
     else:
         print("Optimisation du gain de chaque joueur.")
 
@@ -25,14 +26,15 @@ def seeSawIteration(seeSaw, QeqFlag):
 
     for player in optimOrder:
         print("player {}".format(player))
-        seeSaw.sdpPlayer(player, QeqFlag)
+        playerPOVM = seeSaw.sdpPlayer(player, QeqFlag)
+        seeSaw.update(player, playerPOVM)
         maxDif = max(maxDif, seeSaw.lastDif)
 
     print("QSW {}".format(seeSaw.QSW))
     print("Winrate {}".format(seeSaw.winrate))
     return maxDif
 
-def fullSeeSaw(nbJoueurs, v0, v1, sym=False, treshold=10E-6):
+def fullSeeSaw(nbJoueurs, v0, v1, sym=False, treshold=10e-6):
     game = Game(nbJoueurs, v0,v1, sym)
     seeSaw = SeeSaw(nbJoueurs, game)
 
@@ -54,7 +56,30 @@ def fullSeeSaw(nbJoueurs, v0, v1, sym=False, treshold=10E-6):
         if iteration >= 60: return 0
 
 
-    return seeSaw.QSW
+    return seeSaw.QSW, seeSaw
 
 
-#fullSeeSaw(5, 2/3, 1)
+def quantumEqCheck(nbPlayers, v0, v1, POVMS, rho, threshold):
+    print("\nQuantum equilibrium check")
+    game = Game(nbPlayers, v0, v1, sym=False)
+    seeSaw = SeeSaw(dimension=2, game=game)
+    seeSaw.rho = rho
+    seeSaw.POVM_Dict = POVMS
+
+    maxUpdate = 0
+    for player in range(nbPlayers):
+        print("player {}".format(player))
+        seeSaw.currentPayout(player)
+        playerPOVM = seeSaw.sdpPlayer(player, Qeq=True)
+        maxUpdate = max(maxUpdate, seeSaw.lastDif)
+
+    #seeSawIteration(seeSaw, QeqFlag=True)
+    return maxUpdate <= threshold
+
+
+if __name__ == '__main__':
+    nbPlayers = 5
+    v0 = 2/3
+    v1 = 1
+    qsw, seeSaw = fullSeeSaw(nbPlayers, 2/3, 1)
+    print(quantumEqCheck(nbPlayers, v0, v1, seeSaw.POVM_Dict, seeSaw.rho, threshold=10e-6))

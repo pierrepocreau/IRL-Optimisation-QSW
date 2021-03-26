@@ -9,7 +9,7 @@ from time import time
 class SeeSaw:
 
     def __init__(self, dimension, game):
-        self.dimension = dimension
+        #self.dimension = dimension 2 by default
         self.game = game
         self.nbJoueurs = self.game.nbPlayers
 
@@ -18,6 +18,31 @@ class SeeSaw:
         self.rho = self.genRho()
         self.QSW = 0
         self.lastDif = 10 # >0
+
+
+    def currentPayout(self, playerId):
+        playerPayout = 0
+        for question in self.game.questions():
+            for answer in self.game.validAnswerIt(question):
+                proba = self.proba(answer, question)
+                playerPayout += self.game.questionDistribution * self.game.playerPayout(answer, playerId) * proba
+
+        self.playersPayout[playerId] = playerPayout
+
+    def proba(self, answer, question):
+        '''
+        Calculate the probability p(a|t) with current povms
+        '''
+
+        IdPOVM = answer[0] + question[0]
+        matrix = self.POVM_Dict["0" + IdPOVM]
+
+        for player in range(1, self.nbJoueurs):
+            IdPOVM = answer[player] + question[player]
+            matrix = np.kron(matrix, self.POVM_Dict[str(player) + IdPOVM])
+
+        matrix = np.dot(self.rho, matrix)
+        return np.trace(matrix)
 
     def genPOVMs(self):
         '''
@@ -101,7 +126,7 @@ class SeeSaw:
             for answer in ["0", "1"]:
                 varMatrix = cp.Variable((2, 2), PSD=True)
                 #We must create a matrix by hand, cp.Variabel((2,2)) can't be used as first arguement of cp.kron(a, b) or np.kron(a, b)
-                var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
+                #var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
                 varDict[answer + type] = varMatrix
 
         constraints += [cp.bmat(varDict["00"] + varDict["10"]) == np.eye(2)]
@@ -126,11 +151,12 @@ class SeeSaw:
         sdp.solve(solver=cp.MOSEK, verbose=False)
         self.QSW = socialWelfare.value
         self.winrate = winrate.value
-        self.update(playerId, varDict)
         self.lastDif = np.abs(playerPayout.value - self.playersPayout[playerId])
         print("player payout {} updateDiff {}".format(playerPayout.value, self.lastDif))
 
         self.playersPayout[playerId] = playerPayout.value
+        return varDict
+
 
     def sdpRho(self):
         '''
@@ -154,5 +180,8 @@ class SeeSaw:
         sdp = cp.Problem(cp.Maximize(socialWelfaire), constraints)
         sdp.solve(solver=cp.MOSEK, verbose=False)
 
-        #Update rho
-        self.rho = rho.value
+        return rho
+
+
+    def updateRho(self, rho):
+        self.rho  = rho.value
