@@ -45,7 +45,7 @@ def fullSeeSaw(nbJoueurs, v0, v1, sym=False, treshold=10e-6):
         maxDif = seeSawIteration(seeSaw, False)
         iteration += 1
 
-        if iteration >= 30: return 0
+        if iteration >= 30: return 0, seeSaw
 
     maxDif = 2
     while maxDif >= treshold:
@@ -53,7 +53,7 @@ def fullSeeSaw(nbJoueurs, v0, v1, sym=False, treshold=10e-6):
         maxDif = seeSawIteration(seeSaw, True)
         iteration += 1
 
-        if iteration >= 60: return 0
+        if iteration >= 60: return 0, seeSaw
 
 
     return seeSaw.QSW, seeSaw
@@ -81,5 +81,5 @@ if __name__ == '__main__':
     nbPlayers = 5
     v0 = 2/3
     v1 = 1
-    qsw, seeSaw = fullSeeSaw(nbPlayers, 2/3, 1)
+    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1)
     print(quantumEqCheck(nbPlayers, v0, v1, seeSaw.POVM_Dict, seeSaw.rho, threshold=10e-6))
