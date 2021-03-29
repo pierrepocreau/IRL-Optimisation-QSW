@@ -4,6 +4,7 @@ from Game import Game
 from SDP import SDP
 from mainSeeSaw import fullSeeSaw
 import matplotlib.pyplot as plt
+import os
 
 def readFile(file):
     f = open(file, "r")
@@ -15,7 +16,7 @@ def readFile(file):
     return data
 
 
-def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshold=0.4):
+def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshold=0.4, dimension=2):
 
     operatorsP1 = [0, 1, 2]
     operatorsP2 = [0, 3, 4]
@@ -42,6 +43,8 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     QSW_Nash = []
     QSW_NotNash = []
     QSW_SeeSaw = []
+    Winrate_SeeSaw = []
+    test = []
 
     try :
         QSW_GraphState = readFile('data/{}Players_{}Points_GraphState.txt'.format(nbPlayers, points))
@@ -51,6 +54,8 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             print("iteration {}".format(idx))
             qswGraphState = (v0 + v1) / 2
             QSW_GraphState.append(qswGraphState)
+            a = 7/12 + 1/6*v0
+            test.append(a)
 
             with open('data/{}Players_{}Points_GraphState.txt'.format(nbPlayers, points), 'w') as f:
                 for item in QSW_GraphState:
@@ -92,30 +97,49 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 
     try:
         QSW_SeeSaw = readFile('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points))
+        Winrate_SeeSaw = readFile('data/{}Players_{}Points_SeeSaw_Winrate.txt'.format(nbPlayers, points))
+
 
     except:
         print("SeeSaw")
+        init = None
 
-        for it, v0 in enumerate(x):
+        for it, v0 in enumerate(reversed(x)):
             print("\nGlobal Iteration {}".format(it))
-            maxQsw = 0
+            maxQsw, winrate = 0, 0
+            bestPOVMS = None
+            bestRho = None
             nbRepeat = seeSawRepeatLow * (v0 < treshold) + seeSawRepeatHigh * (v0 >= treshold)
+
 
             for r in range(nbRepeat):
                 print("nbRepeat {}".format(r))
-                qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1)
+                qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, dimension=dimension)
                 maxQsw = max(maxQsw, qsw)
+                if maxQsw == qsw:
+                    winrate = seeSaw.winrate
+                    bestPOVMS = seeSaw.POVM_Dict
+                    bestRho = seeSaw.rho
 
             QSW_SeeSaw.append(maxQsw)
+            Winrate_SeeSaw.append(winrate)
+            init = (bestPOVMS, seeSaw.genRho()) #If we keep old rho, we often (always ?) stay on the same equilibrium.
 
         with open('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points), 'w') as f:
             for item in QSW_SeeSaw:
                 f.write("%s\n" % item)
 
+        with open('data/{}Players_{}Points_SeeSaw_Winrate.txt'.format(nbPlayers, points), 'w') as f:
+            for item in Winrate_SeeSaw:
+                f.write("%s\n" % item)
+
     plt.plot(x, QSW_GraphState, label="GraphState")
-    plt.plot(x, QSW_Nash, label="SDPNash")
-    plt.plot(x, QSW_NotNash, label="SDPNotNash")
-    plt.plot(x, QSW_SeeSaw, label="SeeSaw")
+    plt.plot(x, QSW_Nash, label="HierarchieNash")
+    plt.plot(x, QSW_NotNash, label="HierarchieNotNash")
+    plt.plot(x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
+    plt.plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
+    plt.plot(x, test, label="Welfare two players answers 1 and one player Not")
+
     plt.xlabel("V0/V1")
     plt.ylabel("QSW")
     plt.legend(loc="upper right")
@@ -126,10 +150,11 @@ if __name__ == '__main__':
     nbPlayers = 3
     sym=False #Sym for 5 players
     points = 25
-    seeSawRepeatLow = 10
-    seeSawRepeatHigh = 3
-    treshold = 0.4
+    seeSawRepeatLow = 5
+    seeSawRepeatHigh = 5
+    treshold = 0.33
+    dimension = 3 #Only change dimension used in seeSaw, not on the Hierarchie.
 
-    graph(nbPlayers, sym, points, seeSawRepeatLow, seeSawRepeatHigh, treshold)
+    graph(nbPlayers, sym, points, seeSawRepeatLow, seeSawRepeatHigh, treshold, dimension=dimension)
 
 
