@@ -2,7 +2,7 @@ import numpy as np
 import cvxpy as cp
 from Game import Game
 from SDP import SDP
-from mainSeeSaw import fullSeeSaw
+from mainSeeSaw import fullSeeSaw, printPOVMS, graphStatePOVMS
 import matplotlib.pyplot as plt
 import os
 
@@ -107,23 +107,36 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         for it, v0 in enumerate(reversed(x)):
             print("\nGlobal Iteration {}".format(it))
             maxQsw, winrate = 0, 0
+
             bestPOVMS = None
             bestRho = None
-            nbRepeat = seeSawRepeatLow * (v0 < treshold) + seeSawRepeatHigh * (v0 >= treshold)
 
+            if nbPlayers == 3:
+                bestPOVMS = graphStatePOVMS(nbPlayers)
+                graphState = 1 / np.sqrt(8) * np.array([1, 1, 1, -1, 1, -1, -1, -1])
+                bestRho = np.outer(graphState, graphState)
+                init = (bestPOVMS, bestRho)
+
+            nbRepeat = seeSawRepeatLow * (v0 < treshold) + seeSawRepeatHigh * (v0 >= treshold)
 
             for r in range(nbRepeat):
                 print("nbRepeat {}".format(r))
                 qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, dimension=dimension)
                 maxQsw = max(maxQsw, qsw)
+                print(np.trace(np.dot(seeSaw.rho, seeSaw.rho)))
+
                 if maxQsw == qsw:
                     winrate = seeSaw.winrate
                     bestPOVMS = seeSaw.POVM_Dict
                     bestRho = seeSaw.rho
+                    bestSeeSaw = seeSaw
+
 
             QSW_SeeSaw.append(maxQsw)
             Winrate_SeeSaw.append(winrate)
             init = (bestPOVMS, seeSaw.genRho()) #If we keep old rho, we often (always ?) stay on the same equilibrium.
+            printPOVMS(bestSeeSaw)
+            print(bestRho)
 
         with open('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points), 'w') as f:
             for item in QSW_SeeSaw:
@@ -138,7 +151,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     plt.plot(x, QSW_NotNash, label="HierarchieNotNash")
     plt.plot(x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
     plt.plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
-    plt.plot(x, test, label="Welfare two players answers 1 and one player Not")
+    #plt.plot(x, test, label="Welfare two players answers 1 and one player Not")
 
     plt.xlabel("V0/V1")
     plt.ylabel("QSW")
@@ -153,7 +166,7 @@ if __name__ == '__main__':
     seeSawRepeatLow = 5
     seeSawRepeatHigh = 5
     treshold = 0.33
-    dimension = 3 #Only change dimension used in seeSaw, not on the Hierarchie.
+    dimension = 2 #Only change dimension used in seeSaw, not on the Hierarchie.
 
     graph(nbPlayers, sym, points, seeSawRepeatLow, seeSawRepeatHigh, treshold, dimension=dimension)
 

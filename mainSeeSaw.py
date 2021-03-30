@@ -9,7 +9,18 @@ def printPOVMS(seeSaw):
             for answer in ["0", "1"]:
                 print("Player " + str(id) + " Operator " + answer + type)
                 print(seeSaw.POVM_Dict[str(id) + answer + type])
+                print("\n carré ")
+                print(np.dot(seeSaw.POVM_Dict[str(id) + answer + type] , seeSaw.POVM_Dict[str(id) + answer + type]))
                 print("\n")
+
+def graphStatePOVMS(nbPlayers):
+    POVMS_Dict = {}
+    for id in range(nbPlayers):
+        POVMS_Dict[str(id) + "00"] = np.array([[1, 0], [0, 0]])
+        POVMS_Dict[str(id) + "10"] = np.array([[0, 0], [0, 1]])
+        POVMS_Dict[str(id) + "01"] = np.array([[0.5, 0.5], [0.5, 0.5]])
+        POVMS_Dict[str(id) + "11"] = np.array([[0.5, -0.5], [-0.5, 0.5]])
+    return POVMS_Dict
 
 def seeSawIteration(seeSaw, QeqFlag, init=False):
     maxDif = 0

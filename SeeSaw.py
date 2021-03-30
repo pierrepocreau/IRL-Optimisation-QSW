@@ -28,12 +28,14 @@ class SeeSaw:
         self.lastDif = 10 # >0
 
     def currentPayout(self, playerId):
+        self.lastDif = 0
         playerPayout = 0
         for question in self.game.questions():
             for answer in self.game.validAnswerIt(question):
                 proba = self.proba(answer, question)
                 playerPayout += self.game.questionDistribution * self.game.playerPayout(answer, playerId) * proba
 
+        self.lastDif = max(np.abs(self.playersPayout[playerId] - playerPayout), self.lastDif)
         self.playersPayout[playerId] = playerPayout
 
     def proba(self, answer, question):
