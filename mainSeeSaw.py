@@ -84,8 +84,11 @@ def quantumEqCheck(nbPlayers, v0, v1, POVMS, rho, threshold, dimension=2):
     maxUpdate = 0
     for player in range(nbPlayers):
         print("player {}".format(player))
+        print("current payout {}".format(seeSaw.playersPayout[player]))
+        print("Optimization")
         playerPOVM = seeSaw.sdpPlayer(player, Qeq=True)
         maxUpdate = max(maxUpdate, seeSaw.lastDif)
+
 
     #seeSawIteration(seeSaw, QeqFlag=True)
     return maxUpdate <= threshold

@@ -176,6 +176,22 @@ class SeeSaw:
         self.playersPayout[playerId] = playerPayout.value
         return varDict
 
+    def equiv3Players(self, i, j, rho, constraints):
+        if i in [1, 2, 4]:
+            for i_ in [1, 2, 4]:
+                constraints += [rho[i_][j] == rho[i][j]]
+        if i in [3, 5, 6]:
+            for i_ in [3, 5, 6]:
+                constraints += [rho[i_][j] == rho[i][j]]
+
+        if j in [1, 2, 4]:
+            for j_ in [1, 2, 4]:
+                constraints += [rho[i][j_] == rho[i][j]]
+        if j in [3, 5, 6]:
+            for j_ in [3, 5, 6]:
+                constraints += [rho[i][j_] == rho[i][j]]
+
+        return constraints
 
     def sdpRho(self):
         '''
@@ -187,6 +203,10 @@ class SeeSaw:
         rho = cp.Variable((n, n), PSD=True)
         constraints += [cp.trace(rho) == 1]
 
+        #for i in range(n):
+        #    for j in range(n):
+        #        constraints = self.equiv3Players(i, j, rho, constraints)
+
         socialWelfaire = cp.Constant(0)
         winrate = cp.Constant(0)
 
@@ -195,6 +215,7 @@ class SeeSaw:
                 proba = self.probaRho(answer, question, rho)
                 socialWelfaire += self.game.questionDistribution * self.game.answerPayout(answer) * proba
                 winrate += self.game.questionDistribution * proba
+
 
         sdp = cp.Problem(cp.Maximize(socialWelfaire), constraints)
         sdp.solve(solver=cp.MOSEK, verbose=False)
