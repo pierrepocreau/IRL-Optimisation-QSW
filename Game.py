@@ -1,5 +1,4 @@
 import itertools
-import numpy as np
 
 class Game:
 
@@ -11,9 +10,10 @@ class Game:
         self.v0 = v0
         self.v1 = v1
 
-        self.sym = sym
+        self.sym = sym # Symmetric version -> type 1 as often as type 0
 
     def questions(self):
+        '''Return a generator over all questions'''
         if self.sym:
             return self.questionsSym()
         else:
@@ -29,30 +29,39 @@ class Game:
         yield '1' * self.nbPlayers
 
     def questionsSym(self):
-        for i in range(self.nbPlayers):
-            secondOne = (i + 2) % self.nbPlayers
-            i, secondOne = min(i, secondOne), max(i, secondOne)
-            yield '0' * i + '1' + '0' * (secondOne - i - 1) + '1' + '0' * (self.nbPlayers - secondOne - 1)
+        '''
+        Generate question for the symmetric version
+        '''
+
+        for firstOne in range(self.nbPlayers):
+            secondOne = (firstOne + 2) % self.nbPlayers #There is two type 1 per question.
+            firstOne, secondOne = min(firstOne, secondOne), max(firstOne, secondOne)
+            yield '0' * firstOne + '1' + '0' * (secondOne - firstOne - 1) + '1' + '0' * (self.nbPlayers - secondOne - 1)
 
         yield '1' * self.nbPlayers
 
-    def validAnswer(self, answer, question):
-        #When every player receives type1, an answer is correct when the sum of their answer is odd.
-        if not '0' in question:
-            return sum([int(bit) for bit in answer]) % 2
-
-        #Otherwise, only one plauer receives type 1. An answer is correct when the sum of his answer and those of its
-        #neighbors is even.
+    def involvedPlayers(self, question):
+        '''
+        return the set of involved players for a specific question
+        '''
         playedType1 = question.index('1')
 
-        # Symmetric question
+        # Symmetric question, we must choose the correct player with type 1.
         if question.count("1") == 2:
             if question[playedType1 + 2] != "1":
                 playedType1 += 3
 
         involvedPlayers = [(playedType1 - 1) % self.nbPlayers, playedType1, (playedType1 + 1) % self.nbPlayers]
+        return involvedPlayers
 
-        parity = sum([int(answer[idx]) for idx in involvedPlayers]) % 2
+
+    def validAnswer(self, answer, question):
+        #When every player receives type 1, an answer is correct when the sum of their answer is odd.
+        if not '0' in question:
+            return sum([int(bit) for bit in answer]) % 2
+
+        #Else, we check if the sum of invovled players is even
+        parity = sum([int(answer[idx]) for idx in self.involvedPlayers(question)]) % 2
         return not parity
 
     def validAnswerIt(self, question):

@@ -1,6 +1,7 @@
 import cvxpy as cp
 import numpy as np
 from Operator import Variable
+
 import itertools
 
 class SDP:
@@ -82,6 +83,7 @@ class SDP:
                     payoutVecNot = []
                     for question in self.game.questions():
                         stillValid = lambda answer: question[playerId] != type or answer[playerId] != noti
+                        #Erreur il faut qu'il soit impliqué
                         nowValid = lambda answer: question[playerId] == type and answer[playerId] == noti
 
                         for validAnswer in filter(stillValid, self.game.validAnswerIt(question)):
