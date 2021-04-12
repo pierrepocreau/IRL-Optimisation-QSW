@@ -1,9 +1,7 @@
 import numpy as np
 import cvxpy as cp
-from toqitoRandomPovm import random_povm
-from Game import Game
 from toqito.channels import partial_trace
-from time import time
+from toqito.random import random_povm
 
 
 class SeeSaw:
@@ -176,22 +174,6 @@ class SeeSaw:
         self.playersPayout[playerId] = playerPayout.value
         return varDict
 
-    def equiv3Players(self, i, j, rho, constraints):
-        if i in [1, 2, 4]:
-            for i_ in [1, 2, 4]:
-                constraints += [rho[i_][j] == rho[i][j]]
-        if i in [3, 5, 6]:
-            for i_ in [3, 5, 6]:
-                constraints += [rho[i_][j] == rho[i][j]]
-
-        if j in [1, 2, 4]:
-            for j_ in [1, 2, 4]:
-                constraints += [rho[i][j_] == rho[i][j]]
-        if j in [3, 5, 6]:
-            for j_ in [3, 5, 6]:
-                constraints += [rho[i][j_] == rho[i][j]]
-
-        return constraints
 
     def sdpRho(self):
         '''
@@ -202,10 +184,6 @@ class SeeSaw:
         n = self.dimension**self.nbJoueurs
         rho = cp.Variable((n, n), PSD=True)
         constraints += [cp.trace(rho) == 1]
-
-        #for i in range(n):
-        #    for j in range(n):
-        #        constraints = self.equiv3Players(i, j, rho, constraints)
 
         socialWelfaire = cp.Constant(0)
         winrate = cp.Constant(0)
@@ -221,7 +199,6 @@ class SeeSaw:
         sdp.solve(solver=cp.MOSEK, verbose=False)
 
         return rho
-
 
     def updateRho(self, rho):
         self.rho = rho.value

@@ -1,7 +1,6 @@
 from Game import Game
 from SeeSaw import SeeSaw
 import numpy as np
-import random
 
 def printPOVMS(seeSaw):
     for id in range(seeSaw.game.nbPlayers):
@@ -21,6 +20,19 @@ def graphStatePOVMS(nbPlayers):
         POVMS_Dict[str(id) + "01"] = np.array([[0.5, 0.5], [0.5, 0.5]])
         POVMS_Dict[str(id) + "11"] = np.array([[0.5, -0.5], [-0.5, 0.5]])
     return POVMS_Dict
+
+def graphState(nbPlayers):
+    """
+    Return the density matrix associated to the graphState for 3 or 5 players.
+    """
+    assert(nbPlayers == 3 or nbPlayers == 5)
+    if nbPlayers == 3:
+        graphStateVec = 1 / np.sqrt(8) * np.array([1, 1, 1, -1, 1, -1, -1, -1])
+    elif nbPlayers == 5:
+        graphStateVec = 1 / np.sqrt(2 ** 5) * np.array([1, 1, 1, -1, 1, 1, -1, 1, 1, 1, 1, -1, -1, -1, 1, -1, 1, -1,
+                                                        1, 1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1])
+
+    return np.outer(graphStateVec, graphStateVec)
 
 def seeSawIteration(seeSaw, QeqFlag, init=False):
     maxDif = 0
@@ -49,7 +61,6 @@ def seeSawIteration(seeSaw, QeqFlag, init=False):
 def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=10e-6, dimension=2):
     game = Game(nbJoueurs, v0,v1, sym)
     seeSaw = SeeSaw(dimension=dimension, game=game, init=init)
-    graphState = 1/np.sqrt(8) * np.array([1, 1, 1, -1, 1, -1, -1, -1])
 
     maxDif = 2
     iteration = 1
@@ -75,7 +86,6 @@ def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=10e-6, dimensio
 
     return seeSaw.QSW, seeSaw
 
-
 def quantumEqCheck(nbPlayers, v0, v1, POVMS, rho, threshold, dimension=2):
     print("\nQuantum equilibrium check")
     game = Game(nbPlayers, v0, v1, sym=False)
@@ -88,7 +98,6 @@ def quantumEqCheck(nbPlayers, v0, v1, POVMS, rho, threshold, dimension=2):
         print("Optimization")
         playerPOVM = seeSaw.sdpPlayer(player, Qeq=True)
         maxUpdate = max(maxUpdate, seeSaw.lastDif)
-
 
     #seeSawIteration(seeSaw, QeqFlag=True)
     return maxUpdate <= threshold

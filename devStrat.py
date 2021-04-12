@@ -4,7 +4,6 @@ import numpy as np
 from mainSeeSaw import quantumEqCheck
 from scipy.optimize import fmin
 
-
 def QSW(v0, v1, theta, nbPlayers):
     assert(nbPlayers == 3)
     return 1 / 192 * (99 * v0 + 81 * v1 + 32 * (v0 - v1) * np.cos(theta) + 8 * (v0 - v1) * np.cos(

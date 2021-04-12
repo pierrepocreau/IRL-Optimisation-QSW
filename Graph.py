@@ -2,16 +2,17 @@ import numpy as np
 import cvxpy as cp
 from Game import Game
 from hierarchie import SDP
-from mainSeeSaw import fullSeeSaw, printPOVMS, graphStatePOVMS
+from mainSeeSaw import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState
 import matplotlib.pyplot as plt
 from toqito.state_metrics import fidelity
 import devStrat
 import os
 
-graphStateVec = 1 / np.sqrt(8) * np.array([1, 1, 1, -1, 1, -1, -1, -1])
-graphState = np.outer(graphStateVec, graphStateVec)
 
 def readFile(file):
+    '''
+    Utility function, to load saved txt file.
+    '''
     f = open(file, "r")
     data = []
     for element in f.read().split("\n"):
@@ -21,7 +22,6 @@ def readFile(file):
             if element != "":
                 print(element)
                 data.append(list(element))
-    print(data)
     return data
 
 
@@ -32,56 +32,62 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     operatorsP3 = [0, 5, 6]
     operatorsP4 = [0, 7, 8]
     operatorsP5 = [0, 9, 10]
-
     P3 = [operatorsP1, operatorsP2, operatorsP3]
     P5 = [operatorsP1, operatorsP2, operatorsP3, operatorsP4, operatorsP5]
-
     if nbPlayers == 5: P = P5
     else: P = P3
-
-    x = np.linspace(0, 1, points)
+    x = np.linspace(0, 1, points, sym)
 
     v1 = 1
     paramV0 = cp.Parameter()
     game = Game(nbPlayers, paramV0, v1, sym)
     prob = SDP(game, P)
 
-
-    QSW_GraphState = []
-    QSW_Nash = []
-    QSW_NotNash = []
-    QSW_dev = []
-    SW_classical = []
-
-
     print("GraphState & deviated strat & classical strat")
+    QSW_GraphState = []
+    SW_classical = []
+    QSW_dev = []
+
     for idx, v0 in enumerate(x):
         print("iteration {}".format(idx))
+
+        #QSW of graphstate Strat
         qswGraphState = (v0 + v1) / 2
         QSW_GraphState.append(qswGraphState)
+
+        #SW for a classical strat (I don't know if it works for 5 players too)
         a = 7/12 + 1/6*v0
         SW_classical.append(a)
-        QSW_dev.append(devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers))
 
+        #QSW for deviated strat
+        dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        QSW_dev.append(dev)
 
     try:
-        QSW_NotNash = readFile('data/{}Players_{}Points_HierarchieNoNash.txt'.format(nbPlayers, points))
+        QSW_NotNash = readFile('data/{}Players_{}Points_Sym{}_HierarchieNoNash.txt'.format(nbPlayers, points, sym))
+        print("Chargement hierarchie sans contrainte de Nash")
+
     except:
         print("Hierarchie Sans contrainte de Nash")
+        QSW_NotNash = []
         for idx, v0 in enumerate(x):
             print("iteration {}".format(idx))
             paramV0.value = v0
             qsw = prob.optimize(verbose=False, warmStart=True)
             QSW_NotNash.append(qsw)
 
-        with open('data/{}Players_{}Points_HierarchieNoNash.txt'.format(nbPlayers, points), 'w') as f:
+        with open('data/{}Players_{}Points_Sym{}_HierarchieNoNash.txt'.format(nbPlayers, points, sym), 'w') as f:
             for item in QSW_NotNash:
                 f.write("%s\n" % item)
 
     try:
-        QSW_Nash = readFile('data/{}Players_{}Points_HierarchieNash.txt'.format(nbPlayers, points))
+        QSW_Nash = readFile('data/{}Players_{}Points_Sym{}_HierarchieNash.txt'.format(nbPlayers, points, sym))
+        print("Chargement hierarchie avec contrainte de Nash")
+
     except:
         print("Hierarchie avec contrainte de Nash")
+        QSW_Nash = []
+
         prob.nashEquilibriumConstraint()
 
         for idx, v0 in enumerate(x):
@@ -90,43 +96,35 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             qsw = prob.optimize(verbose=False, warmStart=True)
             QSW_Nash.append(qsw)
 
-        with open('data/{}Players_{}Points_HierarchieNash.txt'.format(nbPlayers, points), 'w') as f:
+        with open('data/{}Players_{}Points_Sym{}_HierarchieNash.txt'.format(nbPlayers, points, sym), 'w') as f:
             for item in QSW_Nash:
                 f.write("%s\n" % item)
 
     try:
-        QSW_SeeSaw = readFile('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points))
-        Winrate_SeeSaw = readFile('data/{}Players_{}Points_SeeSaw_Winrate.txt'.format(nbPlayers, points))
-        if nbPlayers == 3:
-            rhoMat = np.load('data/{}Players_{}Points_SeeSaw_psiComponents.npy'.format(nbPlayers, points), allow_pickle = True)
+        QSW_SeeSaw = readFile('data/{}Players_{}Points_Sym{}_SeeSaw.txt'.format(nbPlayers, points, sym))
+        Winrate_SeeSaw = readFile('data/{}Players_{}Points_Sym{}_SeeSaw_Winrate.txt'.format(nbPlayers, points, sym))
+        print("Chargement SeeSaw")
+
 
     except:
         print("SeeSaw")
-        init = None
-        rhoMat = []
+        graphStateMatrix = graphState(nbPlayers)
+        init = (graphStatePOVMS(nbPlayers), graphStateMatrix)
+
         QSW_SeeSaw = []
         Winrate_SeeSaw = []
 
-        if os.path.exists('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points)):
-            os.remove('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points))
 
-        if os.path.exists('data/{}Players_{}Points_SeeSaw_Winrate.txt'.format(nbPlayers, points)):
-            os.remove('data/{}Players_{}Points_SeeSaw_Winrate.txt'.format(nbPlayers, points))
+        #If one of them exist, we remove the file.
+        if os.path.exists('data/{}Players_{}Points_Sym{}_SeeSaw.txt'.format(nbPlayers, points, sym)):
+            os.remove('data/{}Players_{}Points_Sym{}_SeeSaw.txt'.format(nbPlayers, points, sym))
+
+        if os.path.exists('data/{}Players_{}Points_Sym{}_SeeSaw_Winrate.txt'.format(nbPlayers, points, sym)):
+            os.remove('data/{}Players_{}Points_Sym{}_SeeSaw_Winrate.txt'.format(nbPlayers, points, sym))
 
         for it, v0 in enumerate(reversed(x)):
             print("\nGlobal Iteration {}".format(it))
-            maxQsw, winrate = 0, 0
-
-            bestPOVMS = None
-            bestRho = None
-            bestfid = 0
-
-            #Initialisation with graphstate strat
-            #implemented for 3 players (need the expression of the graphState for 5 players)
-            if nbPlayers == 3:
-                bestPOVMS = graphStatePOVMS(nbPlayers)
-                bestRho = graphState
-                init = (bestPOVMS, bestRho)
+            maxQsw = 0
 
             nbRepeat = seeSawRepeatLow * (v0 < treshold) + seeSawRepeatHigh * (v0 >= treshold)
 
@@ -134,82 +132,50 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                 print("nbRepeat {}".format(r))
                 qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, dimension=dimension)
                 maxQsw = max(maxQsw, qsw)
-                print(np.trace(np.dot(seeSaw.rho, seeSaw.rho)))
 
-                # If it's the best result we encoutered yet for this v0's value, we save the strat and it's results.
+                # If it's the best result we encoutered yet for this v0's value, we save the strategy.
                 if maxQsw == qsw:
-                    winrate = seeSaw.winrate
-                    bestPOVMS = seeSaw.POVM_Dict
-                    bestRho = seeSaw.rho
                     bestSeeSaw = seeSaw
-                    bestfid = max(bestfid, fidelity(bestRho, graphState))
+
 
             QSW_SeeSaw.append(maxQsw)
-            Winrate_SeeSaw.append(winrate)
-            init = (bestPOVMS, seeSaw.genRho()) #If we keep old rho, we often (always ?) stay on the same equilibrium.
+            Winrate_SeeSaw.append(bestSeeSaw.winrate)
+            init = (bestSeeSaw.POVM_Dict, seeSaw.genRho()) #If we keep old rho, we often (always ?) stay on the same equilibrium.
             printPOVMS(bestSeeSaw)
+            print("Trace of rho squared:", np.trace(np.dot(bestSeeSaw.rho, bestSeeSaw.rho)))
+            print("Fidelity with graphState", fidelity(bestSeeSaw.rho, graphStateMatrix))
 
-            #Need the graphstate expression for 5 players
-            if nbPlayers == 3:
-                #Orthogonal of |psi> where bestRho = |psi><psi|
-                direction = graphStateVec - np.dot(graphStateVec, np.dot(graphState, bestRho))
-                #Calculation of psi from the orthogonal
-                psi = (graphStateVec - direction) / (np.sqrt(np.dot(np.dot(graphStateVec, bestRho), graphStateVec)))
-                rhoMat.append(psi)
-
-                print("psi: ", psi)
-                print("Fidelity rho & graphstate", bestfid)
-
-        with open('data/{}Players_{}Points_SeeSaw.txt'.format(nbPlayers, points), 'w') as f:
+        with open('data/{}Players_{}Points_Sym{}_SeeSaw.txt'.format(nbPlayers, points, sym), 'w') as f:
             for item in QSW_SeeSaw:
                 f.write("%s\n" % item)
 
-        with open('data/{}Players_{}Points_SeeSaw_Winrate.txt'.format(nbPlayers, points), 'w') as f:
+        with open('data/{}Players_{}Points_Sym{}_SeeSaw_Winrate.txt'.format(nbPlayers, points, sym), 'w') as f:
             for item in Winrate_SeeSaw:
                 f.write("%s\n" % item)
 
-        if nbPlayers == 3:
-            rhoMat = np.array(rhoMat).transpose()
-            np.save('data/{}Players_{}Points_SeeSaw_psiComponents'.format(nbPlayers, points), rhoMat)
+    fig, axs = plt.subplots(1, constrained_layout = True, figsize=(10, 10))
+    fig.suptitle("Graph for {} players with {} points, sym: {}".format(nbPlayers, points, sym))
 
-    fig, axs = plt.subplots(2, constrained_layout = True, figsize=(10, 20))
-    fig.suptitle("Graph for {} players with {} points".format(nbPlayers, points))
+    axs.plot(x, QSW_GraphState, label="GraphState")
+    axs.plot(x, QSW_Nash, label="HierarchieNash")
+    axs.plot(x, QSW_NotNash, label="HierarchieNotNash")
+    axs.plot(x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
+    axs.plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
+    axs.plot(x, QSW_dev, label="stratégie deviée")
+    axs.plot(x, SW_classical, label="Welfare two players answers 1 and one player Not")
 
-    axs[0].plot(x, QSW_GraphState, label="GraphState")
-    axs[0].plot(x, QSW_Nash, label="HierarchieNash")
-    axs[0].plot(x, QSW_NotNash, label="HierarchieNotNash")
-    axs[0].plot(x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
-    axs[0].plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
-    axs[0].plot(x, QSW_dev, label="stratégie deviée")
-    axs[0].plot(x, SW_classical, label="Welfare two players answers 1 and one player Not")
-
-    axs[0].set_title("Quantum social welfare")
-    axs[0].set_xlabel("V0/V1")
-    axs[0].set_ylabel("QSW")
-    axs[0].set_ylim([0, 1])
-    axs[0].legend(loc="upper right")
-
-    if nbPlayers == 3:
-        axs[1].plot(x, list(reversed(rhoMat[0])), label="|000>")
-        axs[1].plot(x, list(reversed(rhoMat[1])), label="|100> (|010> |001>)")
-        axs[1].plot(x, list(reversed(rhoMat[2])), label="|010>")
-        axs[1].plot(x, list(reversed(rhoMat[3])), label="|110> (|101> |011>)")
-        axs[1].plot(x, list(reversed(rhoMat[4])), label="|001>")
-        axs[1].plot(x, list(reversed(rhoMat[5])), label="|101>")
-        axs[1].plot(x, list(reversed(rhoMat[6])), label="|011>")
-        axs[1].plot(x, list(reversed(rhoMat[7])), label="|111>")
-        axs[1].set_title("state components")
-        axs[1].set_xlabel("V0/V1")
-        axs[1].set_ylabel("coefficient")
-        axs[1].set_ylim([-0.5, 0.5])
-        axs[1].legend(loc="upper right")
+    axs.set_title("Quantum social welfare")
+    axs.set_xlabel("V0/V1")
+    axs.set_ylabel("QSW")
+    axs.set_ylim([0, 1])
+    axs.legend(loc="upper right")
 
     plt.show()
 
 if __name__ == '__main__':
     nbPlayers = 3
     sym=False #Sym for 5 players
-    points = 25
+    points = 12
     seeSawRepeatLow = 5
     seeSawRepeatHigh = 5
     treshold = 0.33
