@@ -59,6 +59,9 @@ class SeeSaw:
         for playerId in range(self.nbJoueurs):
             for type in ["0", "1"]:
                 for answer in ["0", "1"]:
+                    if (self.dimension > 2):
+                        print("Mauvaise implémentation de la dimension, cf seesaw - ligne 63")
+                        exit(0)
                     povms = random_povm(self.dimension, 2, self.dimension)  # dim = 2, nbInput = 2, nbOutput = 2
 
                     opDict[str(playerId) + answer + type] = povms[:, :, int(type), int(answer)].real
@@ -67,7 +70,9 @@ class SeeSaw:
 
     def genRho(self):
         dim = self.dimension ** self.nbJoueurs
+
         #It is not necesseray to initialize rho if it's the first parameter optimised.
+        #Can cause problems if not careful !
         rho = np.zeros(shape=(dim, dim))
         return rho
 
@@ -160,6 +165,7 @@ class SeeSaw:
                 winrate += self.game.questionDistribution * proba
 
 
+        #If Qeq flag, we optimise the player's payout, not the QSW.
         if Qeq:
             sdp = cp.Problem(cp.Maximize(playerPayout), constraints)
         else:

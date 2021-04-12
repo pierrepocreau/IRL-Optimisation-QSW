@@ -2,9 +2,8 @@ from Operator import *
 from itertools import product
 import unittest
 import numpy as np
-from Game import Game
+from game import Game
 from hierarchie import SDP
-
 
 class Test(unittest.TestCase):
 
@@ -149,10 +148,6 @@ class Test(unittest.TestCase):
         for questionSym, questionClassic in zip(gameSym.questions(), gameClassic.questions()):
             for answerSym, answerClassic in zip(gameSym.validAnswerIt(questionSym), gameClassic.validAnswerIt(questionClassic)):
                 self.assertEqual(answerSym, answerClassic)
-
-
-
-
 
 if __name__ == "__main__":
     unittest.main()

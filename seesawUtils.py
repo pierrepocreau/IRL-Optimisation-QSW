@@ -1,6 +1,7 @@
-from Game import Game
-from SeeSaw import SeeSaw
+from game import Game
+from seesaw import SeeSaw
 import numpy as np
+import matplotlib.pyplot as plt
 
 def printPOVMS(seeSaw):
     for id in range(seeSaw.game.nbPlayers):
@@ -35,9 +36,15 @@ def graphState(nbPlayers):
     return np.outer(graphStateVec, graphStateVec)
 
 def seeSawIteration(seeSaw, QeqFlag, init=False):
+    '''
+    Make a seesaw iteration
+    :param QeqFlag: If true, we don't optimise Rho.
+    :param init: If true, we don't initialize Rho.
+    :return:
+    '''
     maxDif = 0
-    if not QeqFlag:
-        if not init: #If rho is initialized, we don't start by optimising it
+
+    if not (QeqFlag or init):
             print("Optimisation de rho")
             rho = seeSaw.sdpRho()
             seeSaw.updateRho(rho)
@@ -59,23 +66,29 @@ def seeSawIteration(seeSaw, QeqFlag, init=False):
     return maxDif
 
 def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=10e-6, dimension=2):
+    '''
+    Réalise des itérations seesaw jusque convergence
+    '''
+
     game = Game(nbJoueurs, v0,v1, sym)
     seeSaw = SeeSaw(dimension=dimension, game=game, init=init)
 
-    maxDif = 2
+    maxDif = 1
     iteration = 1
+
+    #Optimisation of QSW with modification of Rho and POVMs
     while maxDif >= treshold:
-        #Decomment if we change Rho
-        #initFlag = (init is not None) & (iteration == 1)
-        initFlag = False & iteration == 1
+        initFlag = False #Init flag is set to none because rho is the first thing to be optimized anyway..
         print("\niteration {}".format(iteration))
         maxDif = seeSawIteration(seeSaw, QeqFlag=False, init=initFlag)
         iteration += 1
 
-        #Abort if iteration don't converge fast
+        #Abort if iteration don't converge fast enough
         if iteration >= 100: return 0, seeSaw
 
-    maxDif = 2
+    maxDif = 1
+
+    #Optimisation of each player's payout, without modification of rho
     while maxDif >= treshold:
         print("\niteration {}".format(iteration))
         maxDif = seeSawIteration(seeSaw, QeqFlag=True, init=False)
@@ -99,14 +112,14 @@ def quantumEqCheck(nbPlayers, v0, v1, POVMS, rho, threshold, dimension=2):
         playerPOVM = seeSaw.sdpPlayer(player, Qeq=True)
         maxUpdate = max(maxUpdate, seeSaw.lastDif)
 
-    #seeSawIteration(seeSaw, QeqFlag=True)
     return maxUpdate <= threshold
 
 
 if __name__ == '__main__':
     nbPlayers = 5
-    v0 = 0.14
+    v0 = 2/3
     v1 = 1
     dimension = 2
-    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, dimension=dimension)
+    symmetric=False
+    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, sym=symmetric, dimension=dimension)
     print(quantumEqCheck(nbPlayers, v0, v1, seeSaw.POVM_Dict, seeSaw.rho, threshold=10e-6, dimension=dimension))

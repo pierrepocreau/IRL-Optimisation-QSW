@@ -1,4 +1,4 @@
-from Game import Game
+from game import Game
 from hierarchie import SDP
 import cvxpy as cp
 

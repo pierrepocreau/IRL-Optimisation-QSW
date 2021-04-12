@@ -1,7 +1,7 @@
 #Functions to generate the deviated strategy for 3 players
 
 import numpy as np
-from mainSeeSaw import quantumEqCheck
+from seesawUtils import quantumEqCheck
 from scipy.optimize import fmin
 
 def QSW(v0, v1, theta, nbPlayers):

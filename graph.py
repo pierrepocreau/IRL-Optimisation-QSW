@@ -1,8 +1,8 @@
 import numpy as np
 import cvxpy as cp
-from Game import Game
+from game import Game
 from hierarchie import SDP
-from mainSeeSaw import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState
+from seesawUtils import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState
 import matplotlib.pyplot as plt
 from toqito.state_metrics import fidelity
 import devStrat
@@ -175,7 +175,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 if __name__ == '__main__':
     nbPlayers = 3
     sym=False #Sym for 5 players
-    points = 12
+    points = 13
     seeSawRepeatLow = 5
     seeSawRepeatHigh = 5
     treshold = 0.33
