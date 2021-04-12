@@ -3,7 +3,7 @@ from itertools import product
 import unittest
 import numpy as np
 from Game import Game
-from SDP import SDP
+from hierarchie import SDP
 
 
 class Test(unittest.TestCase):

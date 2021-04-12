@@ -1,7 +1,7 @@
 import numpy as np
 import cvxpy as cp
 from Game import Game
-from SDP import SDP
+from hierarchie import SDP
 from mainSeeSaw import fullSeeSaw, printPOVMS, graphStatePOVMS
 import matplotlib.pyplot as plt
 from toqito.state_metrics import fidelity
@@ -23,10 +23,6 @@ def readFile(file):
                 data.append(list(element))
     print(data)
     return data
-
-
-
-
 
 
 def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, treshold=0.4, dimension=2):
@@ -58,7 +54,6 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     SW_classical = []
 
 
-    #Saving in a file is not needed since it's fast.
     print("GraphState & deviated strat & classical strat")
     for idx, v0 in enumerate(x):
         print("iteration {}".format(idx))
