@@ -1,6 +1,7 @@
 import cvxpy as cp
 import numpy as np
 from Operator import Variable
+
 import itertools
 
 class SDP:
@@ -78,17 +79,32 @@ class SDP:
 
             # Payout for strat which diverge from advice
             for type in ['0', '1']:
-                for noti in ['0', '1']:
+                for answer in ['0', '1']:
                     payoutVecNot = []
                     for question in self.game.questions():
-                        stillValid = lambda answer: question[playerId] != type or answer[playerId] != noti
-                        nowValid = lambda answer: question[playerId] == type and answer[playerId] == noti
+                        #Answers where the player doesn't not his answer
+                        untouchedAnswers = lambda answer: question[playerId] != type or answer[playerId] != answer
 
-                        for validAnswer in filter(stillValid, self.game.validAnswerIt(question)):
-                            payoutVecNot.append(self.genVecPlayerPayout(validAnswer, question, playerId))
+                        #Answers where the player not his answer
+                        notAnswers = lambda answer: question[playerId] == type and answer[playerId] == answer
 
-                        for validAnswer in filter(nowValid, self.game.wrongAnswerIt(question)):
-                            payoutVecNot.append(self.genVecPlayerNotPayout(validAnswer, question, playerId))
+                        # if he is not involved, the set of accepted answer is the same
+                        if playerId not in self.game.involvedPlayers(question):
+                            #The player is not involved, the set of accepted question stay the same
+                            for validAnswer in filter(untouchedAnswers, self.game.validAnswerIt(question)):
+                                payoutVecNot.append(self.genVecPlayerPayout(validAnswer, question, playerId))
+
+                            for validAnswer in filter(notAnswers, self.game.validAnswerIt(question)):
+                                payoutVecNot.append(self.genVecPlayerNotPayout(validAnswer, question, playerId))
+
+                        #The player is involved. He loose on the accepted answer where he nots. But some rejected answers
+                        #are now accepted.
+                        else:
+                            for validAnswer in filter(untouchedAnswers, self.game.validAnswerIt(question)):
+                                payoutVecNot.append(self.genVecPlayerPayout(validAnswer, question, playerId))
+
+                            for validAnswer in filter(notAnswers, self.game.wrongAnswerIt(question)):
+                                payoutVecNot.append(self.genVecPlayerNotPayout(validAnswer, question, playerId))
 
                     payoutVecNot = self.game.questionDistribution * np.array(payoutVecNot).transpose()
                     self.constraints.append(cp.sum(self.X[0] @ cp.bmat((payoutVec - payoutVecNot))) >= 0)
@@ -169,5 +185,5 @@ class SDP:
         return objectifFunction
 
     def optimize(self, verbose, warmStart):
-        self.prob.solve(solver=cp.MOSEK, verbose=verbose, warm_start=warmStart)
+        self.prob.solve(solver=cp.SCS, verbose=verbose, warm_start=warmStart)
         return self.prob.value
