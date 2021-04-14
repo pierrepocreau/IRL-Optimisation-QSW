@@ -1,5 +1,5 @@
 from game import Game
-from hierarchie import SDP
+from hierarchie import Hierarchie
 import cvxpy as cp
 
 operatorsP1 = [0, 1, 2]
@@ -18,11 +18,11 @@ v1 = cp.Parameter()
 
 game = Game(nbPlayers, v0, v1, sym=False) #To solve the 5 player version, change nbPlayers and P3 to P5
 
-prob = SDP(game, P5)
-prob.nashEquilibriumConstraint()
+prob = Hierarchie(game, P5)
+prob.setNashEqConstraints()
 v0.value = 2/3
 v1.value = 1
-qsw = prob.optimize(verbose=True, warmStart=False)
+qsw = prob.optimize(verbose=True, warmStart=False, solver="SCS")
 print("QSW = {}".format(qsw))
 
 

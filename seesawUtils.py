@@ -65,7 +65,7 @@ def seeSawIteration(seeSaw, QeqFlag, init=False):
     print("Winrate {}".format(seeSaw.winrate))
     return maxDif
 
-def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=10e-6, dimension=2):
+def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=1e-6, dimension=2):
     '''
     Réalise des itérations seesaw jusque convergence
     '''
@@ -95,7 +95,6 @@ def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=10e-6, dimensio
         iteration += 1
 
         if iteration >= 200: return 0, seeSaw
-
 
     return seeSaw.QSW, seeSaw
 

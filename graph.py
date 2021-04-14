@@ -1,7 +1,7 @@
 import numpy as np
 import cvxpy as cp
 from game import Game
-from hierarchie import SDP
+from hierarchie import Hierarchie
 from seesawUtils import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState
 import matplotlib.pyplot as plt
 from toqito.state_metrics import fidelity
@@ -41,7 +41,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     v1 = 1
     paramV0 = cp.Parameter()
     game = Game(nbPlayers, paramV0, v1, sym)
-    prob = SDP(game, P)
+    prob = Hierarchie(game, P)
 
     print("GraphState & deviated strat & classical strat")
     QSW_GraphState = []
@@ -55,13 +55,15 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         qswGraphState = (v0 + v1) / 2
         QSW_GraphState.append(qswGraphState)
 
-        #SW for a classical strat (I don't know if it works for 5 players too)
-        a = 7/12 + 1/6*v0
-        SW_classical.append(a)
+        if nbPlayers == 3:
+            # SW for a classical strat (I don't know if it works for 5 players too)
+            # Pour 5 rajouter meilleur (papier)
+            a3 = 7 / 12 + 1 / 6 * v0
+            SW_classical.append(a3)
 
-        #QSW for deviated strat
-        dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
-        QSW_dev.append(dev)
+            # QSW for deviated strat
+            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+            QSW_dev.append(dev)
 
     try:
         QSW_NotNash = readFile('data/{}Players_{}Points_Sym{}_HierarchieNoNash.txt'.format(nbPlayers, points, sym))
@@ -73,7 +75,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         for idx, v0 in enumerate(x):
             print("iteration {}".format(idx))
             paramV0.value = v0
-            qsw = prob.optimize(verbose=False, warmStart=True)
+            qsw = prob.optimize(verbose=False, warmStart=True, solver="SCS")
             QSW_NotNash.append(qsw)
 
         with open('data/{}Players_{}Points_Sym{}_HierarchieNoNash.txt'.format(nbPlayers, points, sym), 'w') as f:
@@ -88,12 +90,12 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         print("Hierarchie avec contrainte de Nash")
         QSW_Nash = []
 
-        prob.nashEquilibriumConstraint()
+        prob.setNashEqConstraints()
 
         for idx, v0 in enumerate(x):
             print("iteration {}".format(idx))
             paramV0.value = v0
-            qsw = prob.optimize(verbose=False, warmStart=True)
+            qsw = prob.optimize(verbose=False, warmStart=True, solver="SCS")
             QSW_Nash.append(qsw)
 
         with open('data/{}Players_{}Points_Sym{}_HierarchieNash.txt'.format(nbPlayers, points, sym), 'w') as f:
@@ -127,6 +129,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             maxQsw = 0
 
             nbRepeat = seeSawRepeatLow * (v0 < treshold) + seeSawRepeatHigh * (v0 >= treshold)
+            #On pourrait couper si on est proche de la borne de la hierarchie
 
             for r in range(nbRepeat):
                 print("nbRepeat {}".format(r))
@@ -161,8 +164,10 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     axs.plot(x, QSW_NotNash, label="HierarchieNotNash")
     axs.plot(x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
     axs.plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
-    axs.plot(x, QSW_dev, label="stratégie deviée")
-    axs.plot(x, SW_classical, label="Welfare two players answers 1 and one player Not")
+
+    if nbPlayers == 3:
+        axs.plot(x, QSW_dev, label="stratégie deviée")
+        axs.plot(x, SW_classical, label="Welfare two players answers 1 and one player Not")
 
     axs.set_title("Quantum social welfare")
     axs.set_xlabel("V0/V1")
@@ -175,7 +180,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 if __name__ == '__main__':
     nbPlayers = 3
     sym=False #Sym for 5 players
-    points = 13
+    points = 7
     seeSawRepeatLow = 5
     seeSawRepeatHigh = 5
     treshold = 0.33

@@ -1,17 +1,17 @@
 import cvxpy as cp
 import numpy as np
-from Operator import Variable
+from canonicOp import CanonicMonome
 
 import itertools
 
-class SDP:
+class Hierarchie:
 
     def __init__(self, game, operatorsPlayers):
         self.game = game
 
         self.operatorsPlayers = operatorsPlayers
-        self.S = [list(s) for s in itertools.product(*operatorsPlayers)]
-        self.n = len(self.S)
+        self.monomeList = [list(s) for s in itertools.product(*operatorsPlayers)]
+        self.n = len(self.monomeList)
 
         self.variableDict = {}
         self.variablePosition = {}
@@ -50,9 +50,9 @@ class SDP:
         matrix = np.zeros((self.n, self.n))
         variableId = 0
 
-        for i, Si in enumerate(self.S):
-            for j, Sj in enumerate(self.S):
-                var = Variable(self.S, i, j, self.operatorsPlayers)
+        for i, Si in enumerate(self.monomeList):
+            for j, Sj in enumerate(self.monomeList):
+                var = CanonicMonome(self.monomeList, i, j, self.operatorsPlayers)
 
                 if var not in self.variableDict:
                     self.variableDict[var] = variableId
@@ -64,7 +64,7 @@ class SDP:
         return matrix
 
 
-    def nashEquilibriumConstraint(self):
+    def setNashEqConstraints(self):
         '''
         Creation of Nash Equilibrium constraint
         '''
@@ -73,38 +73,39 @@ class SDP:
             payoutVec = []  # Payout if he follow advice
             for question in self.game.questions():
                 for validAnswer in self.game.validAnswerIt(question):
-                    payoutVec.append(self.genVecPlayerPayout(validAnswer, question, playerId))
+                    payoutVec.append(self.genVecPlayerPayoutWin(validAnswer, question, playerId))
 
             payoutVec = self.game.questionDistribution * np.array(payoutVec).transpose()
 
             # Payout for strat which diverge from advice
             for type in ['0', '1']:
-                for answer in ['0', '1']:
+                for noti in ['0', '1']:
                     payoutVecNot = []
                     for question in self.game.questions():
                         #Answers where the player doesn't not his answer
-                        untouchedAnswers = lambda answer: question[playerId] != type or answer[playerId] != answer
+                        untouchedAnswers = lambda answer: question[playerId] != type or answer[playerId] != noti
 
                         #Answers where the player not his answer
-                        notAnswers = lambda answer: question[playerId] == type and answer[playerId] == answer
+                        notAnswers = lambda answer: question[playerId] == type and answer[playerId] == noti
 
                         # if he is not involved, the set of accepted answer is the same
+                        print(playerId not in self.game.involvedPlayers(question))
                         if playerId not in self.game.involvedPlayers(question):
                             #The player is not involved, the set of accepted question stay the same
                             for validAnswer in filter(untouchedAnswers, self.game.validAnswerIt(question)):
-                                payoutVecNot.append(self.genVecPlayerPayout(validAnswer, question, playerId))
+                                payoutVecNot.append(self.genVecPlayerPayoutWin(validAnswer, question, playerId))
 
                             for validAnswer in filter(notAnswers, self.game.validAnswerIt(question)):
-                                payoutVecNot.append(self.genVecPlayerNotPayout(validAnswer, question, playerId))
+                                payoutVecNot.append(self.genVecPlayerNotPayoutWin(validAnswer, question, playerId))
 
                         #The player is involved. He loose on the accepted answer where he nots. But some rejected answers
                         #are now accepted.
                         else:
                             for validAnswer in filter(untouchedAnswers, self.game.validAnswerIt(question)):
-                                payoutVecNot.append(self.genVecPlayerPayout(validAnswer, question, playerId))
+                                payoutVecNot.append(self.genVecPlayerPayoutWin(validAnswer, question, playerId))
 
                             for validAnswer in filter(notAnswers, self.game.wrongAnswerIt(question)):
-                                payoutVecNot.append(self.genVecPlayerNotPayout(validAnswer, question, playerId))
+                                payoutVecNot.append(self.genVecPlayerNotPayoutWin(validAnswer, question, playerId))
 
                     payoutVecNot = self.game.questionDistribution * np.array(payoutVecNot).transpose()
                     self.constraints.append(cp.sum(self.X[0] @ cp.bmat((payoutVec - payoutVecNot))) >= 0)
@@ -118,7 +119,7 @@ class SDP:
         '''
         assert(len(answer) == len(question) == self.game.nbPlayers)
 
-        vec = [0] * len(self.S)
+        vec = [0] * len(self.monomeList)
 
         operator = []
         for p in range(self.game.nbPlayers):
@@ -132,8 +133,8 @@ class SDP:
 
         def recursiveFunc(operator, coef):
             #The operator is in the matrix
-            if operator in self.S:
-                vec[self.S.index(operator)] = coef
+            if operator in self.monomeList:
+                vec[self.monomeList.index(operator)] = coef
 
             #There is a negative number as operator (the player answer 1)
             else:
@@ -152,25 +153,25 @@ class SDP:
         recursiveFunc(operator, 1)
         return vec
 
-    def genVecPlayerPayout(self, answer, question, playerdId):
+    def genVecPlayerPayoutWin(self, answer, question, playerdId):
         """
         Return the vector with which to multiply the first row of X to have the payout of a player.
         """
-        coef = self.game.playerPayout(answer, playerdId)
+        coef = self.game.playerPayoutWin(answer, playerdId)
         return list(map(lambda x: x * coef, self.genVec(answer, question)))
 
-    def genVecPlayerNotPayout(self, answer, question, playerdId):
+    def genVecPlayerNotPayoutWin(self, answer, question, playerdId):
         """
         Payout of a player, if he not is answer.
         """
-        coef = self.game.notPlayerPayout(answer, playerdId)
+        coef = self.game.notPlayerPayoutWin(answer, playerdId)
         return list(map(lambda x: x * coef, self.genVec(answer, question)))
 
-    def genVecPayout(self, answer, question):
+    def genVecWelfareWin(self, answer, question):
         """
         Mean payout of all player.
         """
-        coef = self.game.answerPayout(answer)
+        coef = self.game.answerPayoutWin(answer)
         return list(map(lambda x: x * coef, self.genVec(answer, question)))
 
     def objectifFunctions(self, game):
@@ -178,12 +179,16 @@ class SDP:
 
         for question in game.questions():
             for validAnswer in game.validAnswerIt(question):
-                objectifFunctionPayout.append(self.genVecPayout(validAnswer, question))
+                objectifFunctionPayout.append(self.genVecWelfareWin(validAnswer, question))
 
         objectifFunction = self.game.questionDistribution * np.array(objectifFunctionPayout).transpose()
 
         return objectifFunction
 
-    def optimize(self, verbose, warmStart):
-        self.prob.solve(solver=cp.SCS, verbose=verbose, warm_start=warmStart)
+    def optimize(self, verbose, warmStart, solver):
+        assert(solver == "SCS" or solver == "MOSEK")
+        if solver == "SCS":
+            self.prob.solve(solver=cp.SCS, verbose=verbose, warm_start=warmStart)
+        else:
+            self.prob.solve(solver=cp.MOSEK, verbose=verbose, warm_start=warmStart)
         return self.prob.value

@@ -1,9 +1,9 @@
-from Operator import *
+from canonicOp import *
 from itertools import product
 import unittest
 import numpy as np
 from game import Game
-from hierarchie import SDP
+from hierarchie import Hierarchie
 
 class Test(unittest.TestCase):
 
@@ -14,19 +14,19 @@ class Test(unittest.TestCase):
         P3 = [operatorsP1, operatorsP2, operatorsP3]
         S = [list(s) for s in product(*P3)]
 
-        proba = Variable(S, 3, 10, P3)
-        proba3 = Variable(S, 8, 10, P3)
+        proba = CanonicMonome(S, 3, 10, P3)
+        proba3 = CanonicMonome(S, 8, 10, P3)
 
         #Test cannonic form and projection
         self.assertListEqual(proba.cannonic, [1, 3, 5, 0, 0, 0])
         self.assertListEqual(proba3.cannonic, [1, 4, 6, 5, 0, 0])
 
         #Test symetric
-        self.assertEqual(Variable(S, 13, 24, P3), Variable(S, 24, 13, P3))
-        self.assertNotEqual(Variable(S, 2, 10, P3), proba)
+        self.assertEqual(CanonicMonome(S, 13, 24, P3), CanonicMonome(S, 24, 13, P3))
+        self.assertNotEqual(CanonicMonome(S, 2, 10, P3), proba)
 
         #Test Id
-        self.assertEqual(Variable(S, 10, 10, P3), Variable(S, 0, 10, P3))
+        self.assertEqual(CanonicMonome(S, 10, 10, P3), CanonicMonome(S, 0, 10, P3))
 
     def testMatrixCreation(self):
         nbPlayers = 3
@@ -36,7 +36,7 @@ class Test(unittest.TestCase):
         operatorsP3 = [0, 5, 6]
         P3 = [operatorsP1, operatorsP2, operatorsP3]
         game = Game(nbPlayers, v0, v1)
-        sdp = SDP(game, P3)
+        sdp = Hierarchie(game, P3)
         matrix = sdp.projectorConstraints()
 
         self.assertListEqual(list(matrix[0,:]), list(range(27)))
@@ -85,7 +85,7 @@ class Test(unittest.TestCase):
         operatorsP3 = [0, 5, 6]
         P3 = [operatorsP1, operatorsP2, operatorsP3]
         game = Game(nbPlayers, v0, v1)
-        sdp = SDP(game, P3)
+        sdp = Hierarchie(game, P3)
 
         encodingVec = sdp.genVec("000", "111")
         correct = [0] * 26 + [1]
@@ -93,25 +93,25 @@ class Test(unittest.TestCase):
 
         encodingVec = sdp.genVec("000", "010")
         correct = [0] * 27
-        correct[sdp.S.index([1, 4, 5])] = 1
+        correct[sdp.monomeList.index([1, 4, 5])] = 1
         self.assertListEqual(encodingVec, correct)
 
         encodingVec = sdp.genVec("100", "010")
         correct = [0] * 27
         # P(100 | 010) = P(I00|010) - P(000|010)
-        correct[sdp.S.index([0, 4, 5])] = 1
-        correct[sdp.S.index([1, 4, 5])] = -1
+        correct[sdp.monomeList.index([0, 4, 5])] = 1
+        correct[sdp.monomeList.index([1, 4, 5])] = -1
         self.assertListEqual(encodingVec, correct)
 
         encodingVec = sdp.genVec("110", "010")
         correct = [0] * 27
         #P(110|010) = P(II0|010) - P(OOO|O1O) - P(010|010) - P(100|010) = ...
-        correct[sdp.S.index([0, 0, 5])] = 1
-        correct[sdp.S.index([1, 4, 5])] = -1
-        correct[sdp.S.index([0, 4, 5])] = -1
-        correct[sdp.S.index([1, 4, 5])] = 1
-        correct[sdp.S.index([1, 0, 5])] = -1
-        correct[sdp.S.index([1, 4, 5])] = +1
+        correct[sdp.monomeList.index([0, 0, 5])] = 1
+        correct[sdp.monomeList.index([1, 4, 5])] = -1
+        correct[sdp.monomeList.index([0, 4, 5])] = -1
+        correct[sdp.monomeList.index([1, 4, 5])] = 1
+        correct[sdp.monomeList.index([1, 0, 5])] = -1
+        correct[sdp.monomeList.index([1, 4, 5])] = +1
 
         self.assertListEqual(encodingVec, correct)
 

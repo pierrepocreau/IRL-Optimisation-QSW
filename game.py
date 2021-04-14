@@ -4,13 +4,17 @@ class Game:
 
     def __init__(self, nbPlayers, v0, v1, sym=False):
         assert(nbPlayers == 3 or nbPlayers == 5)
+        self.sym = False
+
+        if sym:
+            assert(nbPlayers == 5)
+            self.sym = sym # Symmetric version -> type 1 as often as type 0
+
         self.nbPlayers = nbPlayers
         self.questionDistribution = 1/(self.nbPlayers + 1)
 
         self.v0 = v0
         self.v1 = v1
-
-        self.sym = sym # Symmetric version -> type 1 as often as type 0
 
     def questions(self):
         '''Return a generator over all questions'''
@@ -32,7 +36,6 @@ class Game:
         '''
         Generate question for the symmetric version
         '''
-
         for firstOne in range(self.nbPlayers):
             secondOne = (firstOne + 2) % self.nbPlayers #There is two type 1 per question.
             firstOne, secondOne = min(firstOne, secondOne), max(firstOne, secondOne)
@@ -44,6 +47,11 @@ class Game:
         '''
         return the set of involved players for a specific question
         '''
+
+        if question.count("1") == self.nbPlayers:
+            return list(range(self.nbPlayers))
+
+        #Pour 5 ça ne fonctionne pas pour 11111
         playedType1 = question.index('1')
 
         # Symmetric question, we must choose the correct player with type 1.
@@ -52,6 +60,7 @@ class Game:
                 playedType1 += 3
 
         involvedPlayers = [(playedType1 - 1) % self.nbPlayers, playedType1, (playedType1 + 1) % self.nbPlayers]
+
         return involvedPlayers
 
 
@@ -76,21 +85,22 @@ class Game:
             if not self.validAnswer(answer, question):
                 yield answer
 
-    def answerPayout(self, answer):
+    def answerPayoutWin(self, answer):
         '''
         Return the mean payout of an answer.
         '''
         nbOfOne = sum((int(bit) for bit in answer))
         return 1/self.nbPlayers * (nbOfOne * self.v1 + (self.nbPlayers - nbOfOne) * self.v0)
 
-    def playerPayout(self, answer, playerId):
+    def playerPayoutWin(self, answer, playerId):
         '''
         Return the payout of a specific player.
         '''
+        #CHanger nom
         playerAnswer = answer[playerId]
         return self.v1 * (playerAnswer == '1') + self.v0 * (playerAnswer == '0')
 
-    def notPlayerPayout(self, answer, playerId):
+    def notPlayerPayoutWin(self, answer, playerId):
         '''
         Return the payout of an answer for a given question if the player i answer: not(adivce)
         '''
