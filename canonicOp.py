@@ -7,22 +7,22 @@ def opToPlayer(op, operatorsPlayers):
     assert(op != 0) #Id operator associated to every player.
     return (op - 1) // 2
 
-class Variable:
+class CanonicMonome:
 
-    def __init__(self, S, i, j, playersOperators):
+    def __init__(self, monomeList, i, j, playersOperators):
         """
         create the proba/variable <phi| Si^Dagger Sj |phi>
         """
 
         #We swap i and j if needed because the matrix is suppose to be symetric.
         if i <= j:
-         self.Si = list(reversed(S[i]))
-         self.Sj = S[j]
-         self.value = self.Si + self.Sj
+         self.op_i = list(reversed(monomeList[i]))
+         self.op_j = monomeList[j]
+         self.value = self.op_i + self.op_j
         else:
-         self.Si = list(reversed(S[j]))
-         self.Sj = S[i]
-         self.value = self.Si + self.Sj
+         self.op_i = list(reversed(monomeList[j]))
+         self.op_j = monomeList[i]
+         self.value = self.op_i + self.op_j
 
         self.playersOperators = playersOperators #Operators associated to each player
         self.cannonic = self.cannonicForm()
@@ -45,7 +45,7 @@ class Variable:
         return cannonic
 
     def __eq__(self, other):
-        if not isinstance(other, Variable):
+        if not isinstance(other, CanonicMonome):
             return False
 
         #Two operator are equal if they have the same cannonic form.

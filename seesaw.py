@@ -31,7 +31,7 @@ class SeeSaw:
         for question in self.game.questions():
             for answer in self.game.validAnswerIt(question):
                 proba = self.proba(answer, question)
-                playerPayout += self.game.questionDistribution * self.game.playerPayout(answer, playerId) * proba
+                playerPayout += self.game.questionDistribution * self.game.playerPayoutWin(answer, playerId) * proba
 
         self.lastDif = max(np.abs(self.playersPayout[playerId] - playerPayout), self.lastDif)
         self.playersPayout[playerId] = playerPayout
@@ -40,7 +40,6 @@ class SeeSaw:
         '''
         Calculate the probability p(a|t) with current povms
         '''
-
         IdPOVM = answer[0] + question[0]
         matrix = self.POVM_Dict["0" + IdPOVM]
 
@@ -59,11 +58,12 @@ class SeeSaw:
         for playerId in range(self.nbJoueurs):
             for type in ["0", "1"]:
                 for answer in ["0", "1"]:
+
                     if (self.dimension > 2):
                         print("Mauvaise implémentation de la dimension, cf seesaw - ligne 63")
                         exit(0)
-                    povms = random_povm(self.dimension, 2, self.dimension)  # dim = 2, nbInput = 2, nbOutput = 2
 
+                    povms = random_povm(self.dimension, 2, self.dimension)  # dim = 2, nbInput = 2, nbOutput = 2
                     opDict[str(playerId) + answer + type] = povms[:, :, int(type), int(answer)].real
 
         return opDict
@@ -74,6 +74,7 @@ class SeeSaw:
         #It is not necesseray to initialize rho if it's the first parameter optimised.
         #Can cause problems if not careful !
         rho = np.zeros(shape=(dim, dim))
+        rho[0][0] = 1
         return rho
 
     def probaPlayer(self, answer, question, playerId, playerPOVM):
@@ -82,6 +83,7 @@ class SeeSaw:
         '''
 
         IdPOVM = answer[0] + question[0]
+
         if playerId == 0:
             matrix = np.eye(self.dimension)
         else:
@@ -89,6 +91,7 @@ class SeeSaw:
 
         for player in range(1, self.nbJoueurs):
             IdPOVM = answer[player] + question[player]
+
             if player == playerId:
                 matrix = np.kron(matrix, np.eye(self.dimension))
             else:
@@ -118,10 +121,10 @@ class SeeSaw:
         '''
         Update playersId's POVMs after convex optimisation.
         '''
-        dist = 0
+        #dist = 0
         for type in ["0", "1"]:
             for answer in ["0", "1"]:
-                dist = max(dist, np.linalg.norm(self.POVM_Dict[str(playerId) + answer + type] - playerPOVM[answer + type].value))
+                #dist = max(dist, np.linalg.norm(self.POVM_Dict[str(playerId) + answer + type] - playerPOVM[answer + type].value))
                 self.POVM_Dict[str(playerId) + answer + type] = playerPOVM[answer + type].value
 
         #print("Max diff between old POVMs and new {}".format(dist))
@@ -142,6 +145,7 @@ class SeeSaw:
                 #var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
                 varDict[answer + type] = varMatrix
 
+        #Erreur toqito
         constraint0 = varDict["00"]
         constraint1 = varDict["01"]
 
@@ -160,8 +164,8 @@ class SeeSaw:
         for question in self.game.questions():
             for answer in self.game.validAnswerIt(question):
                 proba = self.probaPlayer(answer, question, playerId, varDict)
-                socialWelfare += self.game.questionDistribution * self.game.answerPayout(answer) * proba
-                playerPayout += self.game.questionDistribution * self.game.playerPayout(answer, playerId) * proba
+                socialWelfare += self.game.questionDistribution * self.game.answerPayoutWin(answer) * proba
+                playerPayout += self.game.questionDistribution * self.game.playerPayoutWin(answer, playerId) * proba
                 winrate += self.game.questionDistribution * proba
 
 
@@ -197,7 +201,7 @@ class SeeSaw:
         for question in self.game.questions():
             for answer in self.game.validAnswerIt(question):
                 proba = self.probaRho(answer, question, rho)
-                socialWelfaire += self.game.questionDistribution * self.game.answerPayout(answer) * proba
+                socialWelfaire += self.game.questionDistribution * self.game.answerPayoutWin(answer) * proba
                 winrate += self.game.questionDistribution * proba
 
 
