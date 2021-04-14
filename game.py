@@ -4,6 +4,7 @@ class Game:
 
     def __init__(self, nbPlayers, v0, v1, sym=False):
         assert(nbPlayers == 3 or nbPlayers == 5)
+        self.sym = False
 
         if sym:
             assert(nbPlayers == 5)

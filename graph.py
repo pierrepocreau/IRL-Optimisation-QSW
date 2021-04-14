@@ -55,14 +55,15 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         qswGraphState = (v0 + v1) / 2
         QSW_GraphState.append(qswGraphState)
 
-        #SW for a classical strat (I don't know if it works for 5 players too)
-        #Pour 5 rajouter meilleur (papier)
-        a3 = 7/12 + 1/6*v0
-        SW_classical.append(a3)
+        if nbPlayers == 3:
+            # SW for a classical strat (I don't know if it works for 5 players too)
+            # Pour 5 rajouter meilleur (papier)
+            a3 = 7 / 12 + 1 / 6 * v0
+            SW_classical.append(a3)
 
-        #QSW for deviated strat
-        dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
-        QSW_dev.append(dev)
+            # QSW for deviated strat
+            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+            QSW_dev.append(dev)
 
     try:
         QSW_NotNash = readFile('data/{}Players_{}Points_Sym{}_HierarchieNoNash.txt'.format(nbPlayers, points, sym))
@@ -163,8 +164,10 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     axs.plot(x, QSW_NotNash, label="HierarchieNotNash")
     axs.plot(x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
     axs.plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
-    axs.plot(x, QSW_dev, label="stratégie deviée")
-    axs.plot(x, SW_classical, label="Welfare two players answers 1 and one player Not")
+
+    if nbPlayers == 3:
+        axs.plot(x, QSW_dev, label="stratégie deviée")
+        axs.plot(x, SW_classical, label="Welfare two players answers 1 and one player Not")
 
     axs.set_title("Quantum social welfare")
     axs.set_xlabel("V0/V1")
