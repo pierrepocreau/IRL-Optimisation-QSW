@@ -57,17 +57,19 @@ class SeeSaw:
         '''
         opDict = {}
         for playerId in range(self.nbJoueurs):
+            povms = random_povm(self.dimension, 2, self.dimension)  # dim = 2, nbInput = 2, nbOutput = 2
             for type in ["0", "1"]:
                 # Generate a unitary to use to make a random projective measurement
-                U = random_unitary(self.dimension)
+                # U = random_unitary(self.dimension)
                 for answer in ["0", "1"]:
                     # TODO: Generalise to higher dimension
                     if (self.dimension > 2):
                         print("Mauvaise implémentation de la dimension, cf seesaw - ligne 63")
                         exit(0)
 
-                    proj = np.transpose([U[int(answer)]])
-                    opDict[str(playerId) + answer + type] = pure_to_mixed(proj)
+                    # proj = np.transpose([U[int(answer)]])
+                    # opDict[str(playerId) + answer + type] = pure_to_mixed(proj)
+                    opDict[str(playerId) + answer + type] = povms[:, :, int(type), int(answer)].real
 
         return opDict
 
@@ -142,7 +144,9 @@ class SeeSaw:
 
         for type in ["0", "1"]:
             for answer in [str(a) for a in range(self.dimension)]:
-                varMatrix = cp.Variable((self.dimension, self.dimension), PSD=True)
+                # varMatrix = cp.Variable((self.dimension, self.dimension), PSD=True)
+                varMatrix = cp.Variable((self.dimension, self.dimension), symmetric=True)
+                constraints += [varMatrix >> 0]
                 #We must create a matrix by hand, cp.Variabel((2,2)) can't be used as first arguement of cp.kron(a, b) or np.kron(a, b)
                 #var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
                 varDict[answer + type] = varMatrix
@@ -194,7 +198,9 @@ class SeeSaw:
         '''
         constraints = []
         n = self.dimension**self.nbJoueurs
-        rho = cp.Variable((n, n), PSD=True)
+        # rho = cp.Variable((n, n), PSD=True)
+        rho = cp.Variable((n,n), symmetric=True)
+        constraints += [rho >> 0]
         constraints += [cp.trace(rho) == 1]
 
         socialWelfaire = cp.Constant(0)
@@ -207,7 +213,7 @@ class SeeSaw:
                 winrate += self.game.questionDistribution * proba
 
 
-        sdp = cp.Problem(cp.Maximize(np.real(socialWelfaire)), constraints)
+        sdp = cp.Problem(cp.Maximize(socialWelfaire), constraints)
         sdp.solve(solver=cp.MOSEK, verbose=False)
 
         return rho

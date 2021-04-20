@@ -182,7 +182,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 if __name__ == '__main__':
     nbPlayers = 3
     sym=False #Sym for 5 players
-    points = 1
+    points = 100
     seeSawRepeatLow = 5
     seeSawRepeatHigh = 5
     treshold = 0.33
