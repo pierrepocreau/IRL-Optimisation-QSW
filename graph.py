@@ -75,7 +75,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         for idx, v0 in enumerate(x):
             print("iteration {}".format(idx))
             paramV0.value = v0
-            qsw = prob.optimize(verbose=False, warmStart=True, solver="SCS")
+            qsw = prob.optimize(verbose=False, warmStart=True, solver="MOSEK")
             QSW_NotNash.append(qsw)
 
         with open('data/{}Players_{}Points_Sym{}_HierarchieNoNash.txt'.format(nbPlayers, points, sym), 'w') as f:
@@ -95,7 +95,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         for idx, v0 in enumerate(x):
             print("iteration {}".format(idx))
             paramV0.value = v0
-            qsw = prob.optimize(verbose=False, warmStart=True, solver="SCS")
+            qsw = prob.optimize(verbose=False, warmStart=True, solver="MOSEK")
             QSW_Nash.append(qsw)
 
         with open('data/{}Players_{}Points_Sym{}_HierarchieNash.txt'.format(nbPlayers, points, sym), 'w') as f:
@@ -134,6 +134,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             for r in range(nbRepeat):
                 print("nbRepeat {}".format(r))
                 qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, dimension=dimension)
+                init = (seeSaw.genPOVMs(), seeSaw.genRho())
                 maxQsw = max(maxQsw, qsw)
 
                 # If it's the best result we encoutered yet for this v0's value, we save the strategy.
@@ -144,6 +145,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             QSW_SeeSaw.append(maxQsw)
             Winrate_SeeSaw.append(bestSeeSaw.winrate)
             init = (bestSeeSaw.POVM_Dict, seeSaw.genRho()) #If we keep old rho, we often (always ?) stay on the same equilibrium.
+            # init = (seeSaw.genPOVMs(), seeSaw.genRho())
             printPOVMS(bestSeeSaw)
             print("Trace of rho squared:", np.trace(np.dot(bestSeeSaw.rho, bestSeeSaw.rho)))
             print("Fidelity with graphState", fidelity(bestSeeSaw.rho, graphStateMatrix))
@@ -180,7 +182,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 if __name__ == '__main__':
     nbPlayers = 3
     sym=False #Sym for 5 players
-    points = 7
+    points = 100
     seeSawRepeatLow = 5
     seeSawRepeatHigh = 5
     treshold = 0.33

@@ -1,7 +1,8 @@
 import numpy as np
 import cvxpy as cp
 from toqito.channels import partial_trace
-from toqito.random import random_povm
+from toqito.random import random_povm, random_state_vector, random_unitary
+from toqito.state_ops import pure_to_mixed
 
 
 class SeeSaw:
@@ -56,25 +57,28 @@ class SeeSaw:
         '''
         opDict = {}
         for playerId in range(self.nbJoueurs):
+            povms = random_povm(self.dimension, 2, self.dimension)  # dim = 2, nbInput = 2, nbOutput = 2
             for type in ["0", "1"]:
+                # Generate a unitary to use to make a random projective measurement
+                # U = random_unitary(self.dimension)
                 for answer in ["0", "1"]:
-
+                    # TODO: Generalise to higher dimension
                     if (self.dimension > 2):
                         print("Mauvaise implémentation de la dimension, cf seesaw - ligne 63")
                         exit(0)
 
-                    povms = random_povm(self.dimension, 2, self.dimension)  # dim = 2, nbInput = 2, nbOutput = 2
+                    # proj = np.transpose([U[int(answer)]])
+                    # opDict[str(playerId) + answer + type] = pure_to_mixed(proj)
                     opDict[str(playerId) + answer + type] = povms[:, :, int(type), int(answer)].real
 
         return opDict
 
     def genRho(self):
         dim = self.dimension ** self.nbJoueurs
-
-        #It is not necesseray to initialize rho if it's the first parameter optimised.
-        #Can cause problems if not careful !
-        rho = np.zeros(shape=(dim, dim))
-        rho[0][0] = 1
+        
+        psi = random_state_vector(dim)
+        rho = pure_to_mixed(psi)
+        
         return rho
 
     def probaPlayer(self, answer, question, playerId, playerPOVM):
@@ -140,7 +144,9 @@ class SeeSaw:
 
         for type in ["0", "1"]:
             for answer in [str(a) for a in range(self.dimension)]:
-                varMatrix = cp.Variable((self.dimension, self.dimension), PSD=True)
+                # varMatrix = cp.Variable((self.dimension, self.dimension), PSD=True)
+                varMatrix = cp.Variable((self.dimension, self.dimension), symmetric=True)
+                constraints += [varMatrix >> 0]
                 #We must create a matrix by hand, cp.Variabel((2,2)) can't be used as first arguement of cp.kron(a, b) or np.kron(a, b)
                 #var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
                 varDict[answer + type] = varMatrix
@@ -192,7 +198,9 @@ class SeeSaw:
         '''
         constraints = []
         n = self.dimension**self.nbJoueurs
-        rho = cp.Variable((n, n), PSD=True)
+        # rho = cp.Variable((n, n), PSD=True)
+        rho = cp.Variable((n,n), symmetric=True)
+        constraints += [rho >> 0]
         constraints += [cp.trace(rho) == 1]
 
         socialWelfaire = cp.Constant(0)
