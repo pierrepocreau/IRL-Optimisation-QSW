@@ -57,16 +57,20 @@ class SeeSaw:
         '''
         opDict = {}
         for playerId in range(self.nbJoueurs):
+            povms = random_povm(self.dimension, 2, self.dimension)  # dim = 2, nbInput = 2, nbOutput = 2
             for type in ["0", "1"]:
+              
+                # Generate a unitary to use to make a random projective measurement
                 U = random_unitary(self.dimension)
                 for answer in ["0", "1"]:
-
+                    # TODO: Generalise to higher dimension
                     if (self.dimension > 2):
                         print("Mauvaise implémentation de la dimension, cf seesaw - ligne 63")
                         exit(0)
 
                     proj = np.transpose([U[int(answer)]])
                     opDict[str(playerId) + answer + type] = pure_to_mixed(proj)
+
 
         return opDict
 
