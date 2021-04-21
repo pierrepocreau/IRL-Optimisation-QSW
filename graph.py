@@ -2,7 +2,7 @@ import numpy as np
 import cvxpy as cp
 from game import Game
 from hierarchie import Hierarchie
-from seesawUtils import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState
+from seesawUtils import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState, ghzState, genRandomPOVMs
 import matplotlib.pyplot as plt
 from toqito.state_metrics import fidelity
 import devStrat
@@ -112,6 +112,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         print("SeeSaw")
         graphStateMatrix = graphState(nbPlayers)
         init = (graphStatePOVMS(nbPlayers), graphStateMatrix)
+        #init = (genRandomPOVMs(nbPlayers), ghzState(nbPlayers))
 
         QSW_SeeSaw = []
         Winrate_SeeSaw = []
@@ -136,6 +137,11 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                 qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, dimension=dimension)
                 maxQsw = max(maxQsw, qsw)
 
+
+                ###UNCOMMENT TO HAVE RANDOM INIT.
+                #First repetition take best POVMs for last V0 value. After it takes random POVMs.
+                #init = (seeSaw.genPOVMs(), seeSaw.genRho())
+
                 # If it's the best result we encoutered yet for this v0's value, we save the strategy.
                 if maxQsw == qsw:
                     bestSeeSaw = seeSaw
@@ -143,10 +149,16 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 
             QSW_SeeSaw.append(maxQsw)
             Winrate_SeeSaw.append(bestSeeSaw.winrate)
+
             init = (bestSeeSaw.POVM_Dict, seeSaw.genRho()) #If we keep old rho, we often (always ?) stay on the same equilibrium.
+
+
             printPOVMS(bestSeeSaw)
+            print("Rho:")
+            print(bestSeeSaw.rho)
             print("Trace of rho squared:", np.trace(np.dot(bestSeeSaw.rho, bestSeeSaw.rho)))
             print("Fidelity with graphState", fidelity(bestSeeSaw.rho, graphStateMatrix))
+            print("Fidelity with ghzState", fidelity(bestSeeSaw.rho, ghzState(nbPlayers)))
 
         with open('data/{}Players_{}Points_Sym{}_SeeSaw.txt'.format(nbPlayers, points, sym), 'w') as f:
             for item in QSW_SeeSaw:
@@ -178,9 +190,9 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     plt.show()
 
 if __name__ == '__main__':
-    nbPlayers = 3
+    nbPlayers = 5
     sym=False #Sym for 5 players
-    points = 7
+    points = 25
     seeSawRepeatLow = 5
     seeSawRepeatHigh = 5
     treshold = 0.33

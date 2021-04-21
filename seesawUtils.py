@@ -1,3 +1,6 @@
+from toqito.random import random_unitary
+from toqito.state_ops import pure_to_mixed
+
 from game import Game
 from seesaw import SeeSaw
 import numpy as np
@@ -22,17 +25,52 @@ def graphStatePOVMS(nbPlayers):
         POVMS_Dict[str(id) + "11"] = np.array([[0.5, -0.5], [-0.5, 0.5]])
     return POVMS_Dict
 
+
+def genRandomPOVMs(nbJoueurs, dimension = 2):
+    '''
+    Initialise each player with random POVMs
+    '''
+    opDict = {}
+    for playerId in range(nbJoueurs):
+        for type in ["0", "1"]:
+            U = random_unitary(dimension)
+            for answer in ["0", "1"]:
+
+                if (dimension > 2):
+                    print("Mauvaise implémentation de la dimension, cf seesaw - ligne 63")
+                    exit(0)
+
+                proj = np.transpose([U[int(answer)]])
+                opDict[str(playerId) + answer + type] = pure_to_mixed(proj)
+
+    return opDict
+
+def ghzState(nbPlayers):
+    """
+    Return the density matrix associated to the ghz for 3 or 5 players.
+    """
+    assert(nbPlayers == 3 or nbPlayers == 5)
+    if nbPlayers == 3:
+        ghzVec = 1 / np.sqrt(2) * np.array([1, 0, 0, 0, 0, 0, 0, 1])
+
+    elif nbPlayers == 5:
+        ghzVec = 1 / np.sqrt(2) * np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+
+
+    return np.outer(ghzVec, ghzVec)
+
+
 def graphState(nbPlayers):
     """
     Return the density matrix associated to the graphState for 3 or 5 players.
     """
     assert(nbPlayers == 3 or nbPlayers == 5)
     if nbPlayers == 3:
-        graphStateVec = 1 / np.sqrt(8) * np.array([1, 1, 1, -1, 1, -1, -1, -1])
+        graphStateVec = 1 / np.sqrt(2**3) * np.array([1, 1, 1, -1, 1, -1, -1, -1])
     elif nbPlayers == 5:
-        graphStateVec = 1 / np.sqrt(2 ** 5) * np.array([1, 1, 1, -1, 1, 1, -1, 1, 1, 1, 1, -1, -1, -1, 1, -1, 1, -1,
-                                                        1, 1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1])
-
+        graphStateVec = 1 / np.sqrt(2**5) * np.array([1, 1, 1, -1, 1, 1, -1, 1, 1, 1, 1, -1, -1, -1, 1, -1, 1, -1,
+                                                   1, 1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, 1])
     return np.outer(graphStateVec, graphStateVec)
 
 def seeSawIteration(seeSaw, QeqFlag, init=False):
@@ -79,6 +117,15 @@ def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=1e-6, dimension
     #Optimisation of QSW with modification of Rho and POVMs
     while maxDif >= treshold:
         initFlag = False #Init flag is set to none because rho is the first thing to be optimized anyway..
+
+        #With the graphState we could specify the measurement povms and optimize rho first.
+        #With ghzState, we only know the state, so we first optimize the povms
+        #It's a bit of a quick fixe, we could do something more general.
+        if init is not None:
+            state = init[1]
+            if (state ==  ghzState(nbJoueurs)).all():
+                initFlag = True
+
         print("\niteration {}".format(iteration))
         maxDif = seeSawIteration(seeSaw, QeqFlag=False, init=initFlag)
         iteration += 1
@@ -122,3 +169,7 @@ if __name__ == '__main__':
     symmetric=False
     qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, sym=symmetric, dimension=dimension)
     print(quantumEqCheck(nbPlayers, v0, v1, seeSaw.POVM_Dict, seeSaw.rho, threshold=10e-6, dimension=dimension))
+    print("POVMS")
+    printPOVMS(seeSaw)
+    print("Rho")
+    print(seeSaw.rho)

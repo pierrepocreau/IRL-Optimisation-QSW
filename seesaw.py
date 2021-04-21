@@ -1,7 +1,8 @@
 import numpy as np
 import cvxpy as cp
 from toqito.channels import partial_trace
-from toqito.random import random_povm
+from toqito.random import random_povm, random_state_vector, random_unitary
+from toqito.state_ops import pure_to_mixed
 
 
 class SeeSaw:
@@ -57,24 +58,23 @@ class SeeSaw:
         opDict = {}
         for playerId in range(self.nbJoueurs):
             for type in ["0", "1"]:
+                U = random_unitary(self.dimension)
                 for answer in ["0", "1"]:
 
                     if (self.dimension > 2):
                         print("Mauvaise implémentation de la dimension, cf seesaw - ligne 63")
                         exit(0)
 
-                    povms = random_povm(self.dimension, 2, self.dimension)  # dim = 2, nbInput = 2, nbOutput = 2
-                    opDict[str(playerId) + answer + type] = povms[:, :, int(type), int(answer)].real
+                    proj = np.transpose([U[int(answer)]])
+                    opDict[str(playerId) + answer + type] = pure_to_mixed(proj)
 
         return opDict
 
     def genRho(self):
         dim = self.dimension ** self.nbJoueurs
 
-        #It is not necesseray to initialize rho if it's the first parameter optimised.
-        #Can cause problems if not careful !
-        rho = np.zeros(shape=(dim, dim))
-        rho[0][0] = 1
+        psi = random_state_vector(dim)
+        rho = pure_to_mixed(psi)
         return rho
 
     def probaPlayer(self, answer, question, playerId, playerPOVM):
@@ -140,7 +140,8 @@ class SeeSaw:
 
         for type in ["0", "1"]:
             for answer in [str(a) for a in range(self.dimension)]:
-                varMatrix = cp.Variable((self.dimension, self.dimension), PSD=True)
+                varMatrix = cp.Variable((self.dimension, self.dimension), hermitian=True)
+                constraints += [varMatrix >> 0]
                 #We must create a matrix by hand, cp.Variabel((2,2)) can't be used as first arguement of cp.kron(a, b) or np.kron(a, b)
                 #var = [[varMatrix[0, 0], varMatrix[0, 1]], [varMatrix[1, 0], varMatrix[1, 1]]]
                 varDict[answer + type] = varMatrix
@@ -171,17 +172,17 @@ class SeeSaw:
 
         #If Qeq flag, we optimise the player's payout, not the QSW.
         if Qeq:
-            sdp = cp.Problem(cp.Maximize(playerPayout), constraints)
+            sdp = cp.Problem(cp.Maximize(cp.real(playerPayout)), constraints)
         else:
-            sdp = cp.Problem(cp.Maximize(socialWelfare), constraints)
+            sdp = cp.Problem(cp.Maximize(cp.real(socialWelfare)), constraints)
 
         sdp.solve(solver=cp.MOSEK, verbose=False)
-        self.QSW = socialWelfare.value
-        self.winrate = winrate.value
-        self.lastDif = np.abs(playerPayout.value - self.playersPayout[playerId])
-        print("player payout {} updateDiff {}".format(playerPayout.value, self.lastDif))
+        self.QSW = cp.real(socialWelfare).value
+        self.winrate = cp.real(winrate).value
+        self.lastDif = np.abs(cp.real(playerPayout).value - self.playersPayout[playerId])
+        print("player payout {} updateDiff {}".format(cp.real(playerPayout).value, self.lastDif))
 
-        self.playersPayout[playerId] = playerPayout.value
+        self.playersPayout[playerId] = cp.real(playerPayout).value
         return varDict
 
 
@@ -192,7 +193,8 @@ class SeeSaw:
         '''
         constraints = []
         n = self.dimension**self.nbJoueurs
-        rho = cp.Variable((n, n), PSD=True)
+        rho = cp.Variable((n, n), hermitian=True)
+        constraints += [rho >> 0]
         constraints += [cp.trace(rho) == 1]
 
         socialWelfaire = cp.Constant(0)
@@ -205,7 +207,7 @@ class SeeSaw:
                 winrate += self.game.questionDistribution * proba
 
 
-        sdp = cp.Problem(cp.Maximize(socialWelfaire), constraints)
+        sdp = cp.Problem(cp.Maximize(cp.real(socialWelfaire)), constraints)
         sdp.solve(solver=cp.MOSEK, verbose=False)
 
         return rho
