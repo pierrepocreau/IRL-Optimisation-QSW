@@ -47,19 +47,71 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     QSW_GraphState = []
     SW_classical = []
     QSW_dev = []
+    xGraphState = []
+    xClassical = []
 
     for idx, v0 in enumerate(x):
         print("iteration {}".format(idx))
 
-        #QSW of graphstate Strat
+        #QSW of graphstate Strat, add only for equlibrium
         qswGraphState = (v0 + v1) / 2
-        QSW_GraphState.append(qswGraphState)
+
+        if nbPlayers == 5:
+            if not sym and v0 >= 1/2:
+                QSW_GraphState.append(qswGraphState)
+                xGraphState.append(v0)
+
+            elif sym and v0 >= 1/3:
+                QSW_GraphState.append(qswGraphState)
+                xGraphState.append(v0)
+
+
+        elif nbPlayers == 3:
+            QSW_GraphState.append(qswGraphState)
+            xGraphState.append(v0)
+
+        #classical strats for 5 players:
+        if nbPlayers == 5:
+            if not sym:
+                if v0 <= 1/3:
+                    a = 2*v0 + 13*v1
+                    b = v0 + 11*v1
+                    c = 4*v0 + 11*v1
+                    d = 8*v0 + 17*v1
+                    bestClassical = 1/30 * max(a, b, c, d)
+                    SW_classical.append(bestClassical)
+
+                elif 1/3 < v0 <= 1/2:
+                    a = 7*v0 + 18*v1
+                    b = 6*v0 + 19*v1
+                    c = 4*v0 + 11*v1
+                    d = 8*v0 + 17*v1
+                    bestClassical = 1/30 * max(a, b, c, d)
+                    SW_classical.append(bestClassical)
+
+                if 1/2 < v0:
+                    a = 11*v0 + 14*v1
+                    b = 7*v0 + 18*v1
+                    c = 6*v0 + 19*v1
+                    d = 8*v0 + 17*v1
+                    e = 8*v0 + 17*v1
+                    f = 14*v0 + 11*v1
+                    bestClassical = 1/30 * max(a, b, c, d, e, f)
+                    SW_classical.append(bestClassical)
+                xClassical.append(v0)
+
+            else:
+                if v0 <= 1/3:
+                    bestClassical = 1/30*(6*v0 + 19*v1)
+                    SW_classical.append(bestClassical)
+                    xClassical.append(v0)
 
         if nbPlayers == 3:
             # SW for a classical strat (I don't know if it works for 5 players too)
             # Pour 5 rajouter meilleur (papier)
             a3 = 7 / 12 + 1 / 6 * v0
             SW_classical.append(a3)
+            xClassical.append(v0)
 
             # QSW for deviated strat
             dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
@@ -111,8 +163,10 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     except:
         print("SeeSaw")
         graphStateMatrix = graphState(nbPlayers)
-        init = (graphStatePOVMS(nbPlayers), graphStateMatrix)
         #init = (genRandomPOVMs(nbPlayers), ghzState(nbPlayers))
+        lastGraphStateInit = (graphStatePOVMS(nbPlayers), graphStateMatrix)
+        lastInit = (graphStatePOVMS(nbPlayers), graphStateMatrix)
+
 
         QSW_SeeSaw = []
         Winrate_SeeSaw = []
@@ -134,14 +188,24 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 
             for r in range(nbRepeat):
                 print("nbRepeat {}".format(r))
-                qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, dimension=dimension)
-                init = (seeSaw.genPOVMs(), seeSaw.genRho())
-                maxQsw = max(maxQsw, qsw)
 
+                if r == 0:
+                    # Following strat with POVMs near graphstate ones
+                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=lastGraphStateInit, sym=sym, dimension=dimension)
+                    lastGraphStateInit = (seeSaw.POVM_Dict, seeSaw.genRho())
+                if r == 1:
+                    #Takes best init for last value of v0
+                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=lastInit, sym=sym, dimension=dimension)
+                else:
+                    #Random init
+                    init = (seeSaw.genPOVMs(), seeSaw.genRho())
+                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym, dimension=dimension)
+
+
+                maxQsw = max(maxQsw, qsw)
 
                 ###UNCOMMENT TO HAVE RANDOM INIT.
                 #First repetition take best POVMs for last V0 value. After it takes random POVMs.
-                #init = (seeSaw.genPOVMs(), seeSaw.genRho())
 
                 # If it's the best result we encoutered yet for this v0's value, we save the strategy.
                 if maxQsw == qsw:
@@ -151,7 +215,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             QSW_SeeSaw.append(maxQsw)
             Winrate_SeeSaw.append(bestSeeSaw.winrate)
 
-            init = (bestSeeSaw.POVM_Dict, seeSaw.genRho()) #If we keep old rho, we often (always ?) stay on the same equilibrium.
+            lastInit = (bestSeeSaw.POVM_Dict, seeSaw.genRho()) #If we keep old rho, we often (always ?) stay on the same equilibrium.
 
             printPOVMS(bestSeeSaw)
             print("Rho:")
@@ -171,15 +235,15 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     fig, axs = plt.subplots(1, constrained_layout = True, figsize=(10, 10))
     fig.suptitle("Graph for {} players with {} points, sym: {}".format(nbPlayers, points, sym))
 
-    axs.plot(x, QSW_GraphState, label="GraphState")
+    axs.plot(xGraphState, QSW_GraphState, label="GraphState")
     axs.plot(x, QSW_Nash, label="HierarchieNash")
     axs.plot(x, QSW_NotNash, label="HierarchieNotNash")
     axs.plot(x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
     axs.plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
+    axs.plot(xClassical, SW_classical, label="SW best classical strat")
 
     if nbPlayers == 3:
         axs.plot(x, QSW_dev, label="stratégie deviée")
-        axs.plot(x, SW_classical, label="Welfare two players answers 1 and one player Not")
 
     axs.set_title("Quantum social welfare")
     axs.set_xlabel("V0/V1")
@@ -191,10 +255,10 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 
 if __name__ == '__main__':
     nbPlayers = 5
-    sym=False #Sym for 5 players
-    points = 25
-    seeSawRepeatLow = 5
-    seeSawRepeatHigh = 5
+    sym=True #Sym for 5 players
+    points = 100
+    seeSawRepeatLow = 3
+    seeSawRepeatHigh = 3
     treshold = 0.33
     dimension = 2 #Only change dimension used in seeSaw, not on the Hierarchie.
 
