@@ -87,12 +87,11 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                 if v0 <= 1/3:
                     bestClassical = 1/30*(4*v0 + 11*v1)
                     SW_classical.append(bestClassical)
-                    xClassical.append(v0)
 
                 elif 1/3 < v0:
                     bestClassical = 1/30*(5*v0 + 20*v1)
                     SW_classical.append(bestClassical)
-                    xClassical.append(v0)
+            xClassical.append(v0)
 
         if nbPlayers == 3:
             # SW for a classical strat (I don't know if it works for 5 players too)
@@ -264,9 +263,9 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     plt.show()
 
 if __name__ == '__main__':
-    nbPlayers = 3
+    nbPlayers = 5
     sym=False #Sym for 5 players
-    points = 25
+    points = 10
     seeSawRepeatLow = 3
     seeSawRepeatHigh = 3
     treshold = 0.33
