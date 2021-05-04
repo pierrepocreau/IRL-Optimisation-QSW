@@ -74,29 +74,18 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         if nbPlayers == 5:
             if not sym:
                 if v0 <= 1/3:
-                    a = 2*v0 + 13*v1
-                    b = v0 + 11*v1
-                    c = 4*v0 + 11*v1
                     d = 8*v0 + 17*v1
-                    bestClassical = 1/30 * max(a, b, c, d)
+                    bestClassical = 1/30 * d
                     SW_classical.append(bestClassical)
 
                 elif 1/3 < v0 <= 1/2:
-                    a = 7*v0 + 18*v1
                     b = 6*v0 + 19*v1
-                    c = 4*v0 + 11*v1
-                    d = 8*v0 + 17*v1
-                    bestClassical = 1/30 * max(a, b, c, d)
+                    bestClassical = 1/30 * b
                     SW_classical.append(bestClassical)
 
                 if 1/2 < v0:
-                    a = 11*v0 + 14*v1
-                    b = 7*v0 + 18*v1
                     c = 6*v0 + 19*v1
-                    d = 8*v0 + 17*v1
-                    e = 8*v0 + 17*v1
-                    f = 14*v0 + 11*v1
-                    bestClassical = 1/30 * max(a, b, c, d, e, f)
+                    bestClassical = 1/30 * c
                     SW_classical.append(bestClassical)
                 xClassical.append(v0)
 
@@ -255,7 +244,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 
 if __name__ == '__main__':
     nbPlayers = 5
-    sym=True #Sym for 5 players
+    sym=False #Sym for 5 players
     points = 100
     seeSawRepeatLow = 3
     seeSawRepeatHigh = 3
