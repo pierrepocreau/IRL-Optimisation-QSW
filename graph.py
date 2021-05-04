@@ -36,7 +36,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     P5 = [operatorsP1, operatorsP2, operatorsP3, operatorsP4, operatorsP5]
     if nbPlayers == 5: P = P5
     else: P = P3
-    x = np.linspace(0, 1, points, sym)
+    x = np.linspace(0, 1, points)
 
     v1 = 1
     paramV0 = cp.Parameter()
@@ -78,20 +78,19 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                     bestClassical = 1/30 * d
                     SW_classical.append(bestClassical)
 
-                elif 1/3 < v0 <= 1/2:
+                elif 1/3 < v0:
                     b = 6*v0 + 19*v1
                     bestClassical = 1/30 * b
                     SW_classical.append(bestClassical)
 
-                if 1/2 < v0:
-                    c = 6*v0 + 19*v1
-                    bestClassical = 1/30 * c
-                    SW_classical.append(bestClassical)
-                xClassical.append(v0)
-
             else:
                 if v0 <= 1/3:
-                    bestClassical = 1/30*(6*v0 + 19*v1)
+                    bestClassical = 1/30*(4*v0 + 11*v1)
+                    SW_classical.append(bestClassical)
+                    xClassical.append(v0)
+
+                elif 1/3 < v0:
+                    bestClassical = 1/30*(5*v0 + 20*v1)
                     SW_classical.append(bestClassical)
                     xClassical.append(v0)
 
@@ -168,6 +167,8 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         if os.path.exists('data/{}Players_{}Points_Sym{}_SeeSaw_Winrate.txt'.format(nbPlayers, points, sym)):
             os.remove('data/{}Players_{}Points_Sym{}_SeeSaw_Winrate.txt'.format(nbPlayers, points, sym))
 
+        prevMax = 1
+
         for it, v0 in enumerate(reversed(x)):
             print("\nGlobal Iteration {}".format(it))
             maxQsw = 0
@@ -190,7 +191,6 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                     init = (seeSaw.genPOVMs(), seeSaw.genRho())
                     qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym, dimension=dimension)
 
-
                 maxQsw = max(maxQsw, qsw)
 
                 ###UNCOMMENT TO HAVE RANDOM INIT.
@@ -199,8 +199,29 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                 # If it's the best result we encoutered yet for this v0's value, we save the strategy.
                 if maxQsw == qsw:
                     bestSeeSaw = seeSaw
+                    maxDiff = abs(prevMax - maxQsw)
 
+            # If huge diff, we do another round of repetition (it's when a class of strategy is no longer an equlibrium)
+            if maxDiff >= 0.05 and v0 != 0:
+                repeat = 20
+                print("another repeat cycle")
 
+                for r in range(repeat):
+                    print("repeat ", r)
+
+                    if r == 0:
+                        init = (bestSeeSaw.POVM_Dict, seeSaw.genRho())
+                    else:
+                        init = (seeSaw.genPOVMs(), seeSaw.genRho())
+                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, sym=sym, dimension=dimension)
+
+                    maxQsw = max(maxQsw, qsw)
+
+                    if maxQsw == qsw:
+                        bestSeeSaw = seeSaw
+                        maxDiff = abs(prevMax - maxQsw)
+
+            prevMax = maxQsw
             QSW_SeeSaw.append(maxQsw)
             Winrate_SeeSaw.append(bestSeeSaw.winrate)
 
@@ -243,9 +264,9 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     plt.show()
 
 if __name__ == '__main__':
-    nbPlayers = 5
+    nbPlayers = 3
     sym=False #Sym for 5 players
-    points = 100
+    points = 25
     seeSawRepeatLow = 3
     seeSawRepeatHigh = 3
     treshold = 0.33
