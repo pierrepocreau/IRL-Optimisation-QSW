@@ -89,7 +89,6 @@ class Hierarchie:
                         notAnswers = lambda answer: question[playerId] == type and answer[playerId] == noti
 
                         # if he is not involved, the set of accepted answer is the same
-                        print(playerId not in self.game.involvedPlayers(question))
                         if playerId not in self.game.involvedPlayers(question):
                             #The player is not involved, the set of accepted question stay the same
                             for validAnswer in filter(untouchedAnswers, self.game.validAnswerIt(question)):

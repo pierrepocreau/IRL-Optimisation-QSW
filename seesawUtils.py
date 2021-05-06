@@ -131,7 +131,7 @@ def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=1e-6, dimension
         iteration += 1
 
         #Abort if iteration don't converge fast enough
-        if iteration >= 30: return 0, seeSaw
+        if iteration >= 60: return 0, seeSaw
 
     maxDif = 1
 
@@ -141,7 +141,7 @@ def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=1e-6, dimension
         maxDif = seeSawIteration(seeSaw, QeqFlag=True, init=False)
         iteration += 1
 
-        if iteration >= 60: return 0, seeSaw
+        if iteration >= 120: return 0, seeSaw
 
     return seeSaw.QSW, seeSaw
 

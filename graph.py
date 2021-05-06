@@ -200,25 +200,20 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                     bestSeeSaw = seeSaw
                     maxDiff = abs(prevMax - maxQsw)
 
-            # If huge diff, we do another round of repetition (it's when a class of strategy is no longer an equlibrium)
-            if maxDiff >= 0.05 and v0 != 0:
-                repeat = 20
-                print("another repeat cycle")
+            # If huge diff, we do another cyle on a strategy which as already been optimized.
+            # Otherwise we have "holes" where the qsw collapse when we shift of strategy class
+            # (i.e when we go from quantum strat to classicals)
+            while (maxDiff >= 0.05 and v0 != 0):
+                print("another cycle")
 
-                for r in range(repeat):
-                    print("repeat ", r)
+                init = (bestSeeSaw.POVM_Dict, seeSaw.genRho())
+                qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, sym=sym, dimension=dimension)
 
-                    if r == 0:
-                        init = (bestSeeSaw.POVM_Dict, seeSaw.genRho())
-                    else:
-                        init = (seeSaw.genPOVMs(), seeSaw.genRho())
-                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, sym=sym, dimension=dimension)
+                maxQsw = max(maxQsw, qsw)
 
-                    maxQsw = max(maxQsw, qsw)
-
-                    if maxQsw == qsw:
-                        bestSeeSaw = seeSaw
-                        maxDiff = abs(prevMax - maxQsw)
+                if maxQsw == qsw:
+                    bestSeeSaw = seeSaw
+                    maxDiff = abs(prevMax - maxQsw)
 
             prevMax = maxQsw
             QSW_SeeSaw.append(maxQsw)
@@ -263,9 +258,9 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     plt.show()
 
 if __name__ == '__main__':
-    nbPlayers = 5
+    nbPlayers = 3
     sym=False #Sym for 5 players
-    points = 10
+    points = 25
     seeSawRepeatLow = 3
     seeSawRepeatHigh = 3
     treshold = 0.33
