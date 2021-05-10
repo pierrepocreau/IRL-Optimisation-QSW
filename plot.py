@@ -1,13 +1,14 @@
 from graph import readFile
 import matplotlib.pylab as plt
 import numpy as np
+from cycler import cycler
 
 
 def plotHierarchie3():
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
 
-    hierarchieNash = readFile('data/3Players_100Points_HierarchieNash.txt')
+    hierarchieNash = readFile('data/3Players_100Points_SymFalse_HierarchieNash.txt')
     x = np.linspace(0, 1, 100)
 
     graphState = list(map(lambda i: (1 + i)/2, x))
@@ -19,6 +20,7 @@ def plotHierarchie3():
     plt.xlabel(r"$\frac{v_0}{v_1}$", labelpad=10)
     plt.ylabel(r"\textit{social welfare}", labelpad=10)
     plt.ylim(0.4, 1)
+    plt.xlim(0, 1)
 
     plt.title(r"Bound on the social welfare for $NC(C_3)$.")
     plt.grid()
@@ -105,6 +107,43 @@ def plotSeeSaw5():
     plt.savefig("5 players seesaw.png", dpi=300, pad_inches=.1, bbox_inches='tight')
     plt.clf()
 
+def plotSeesaw3():
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    default_cycler = (cycler(color=['#0077BB', '#DDAA33', '#BB5566', '#000000']))
+    plt.rc('axes', prop_cycle=default_cycler)
+
+    seesaw = list(reversed(readFile("data/3Players_100Points_SymFalse_SeeSaw.txt")))
+    hierarchieNash = readFile('data/3Players_100Points_SymFalse_HierarchieNash.txt')
+    x = np.linspace(0, 1, 100)
+
+    classicalfunc = lambda v0: 1/12*(2*v0 + 7)  #(Id 1 1)
+
+    xclassical = list(x)
+    classical = list(map(classicalfunc, xclassical))
+
+    xGraphState = list(filter(lambda i: i >= 1/3, x))
+    graphState = list(map(lambda i: (1 + i)/2, xGraphState))
+
+    plt.scatter(x, seesaw, s=12, marker='x', color = 'k', linewidths=0.4, label="seesaw", zorder=3)
+
+    plt.plot(x, hierarchieNash, "-", label="Upper bound")
+    plt.plot(xclassical, classical, linestyle="-", label="Best classical SW")
+
+    plt.plot(xGraphState, graphState,'-', label="SW graph state")
+    plt.legend(loc="best")
+
+    plt.xlabel(r"$\frac{v_0}{v_1}$", labelpad=10)
+    plt.ylabel(r"social welfare", labelpad=10)
+    plt.ylim(0.2, 1)
+    plt.xlim(0, 1)
+
+
+    plt.title(r"Bound and seesaw for $NC(C_3)$.")
+    plt.grid()
+    plt.savefig("3 players seesaw sym.png", dpi=300, pad_inches=.1, bbox_inches='tight')
+    plt.clf()
+
 def plotSeeSaw5Sym():
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
@@ -138,7 +177,8 @@ def plotSeeSaw5Sym():
 
 if __name__ == '__main__':
     plotHierarchie3()
-    plotHierarchie5()
-    plotHierarchie5Sym()
-    plotSeeSaw5()
-    plotSeeSaw5Sym()
+    plotSeesaw3()
+    #plotHierarchie5()
+    #plotHierarchie5Sym()
+    #plotSeeSaw5()
+    #plotSeeSaw5Sym()
