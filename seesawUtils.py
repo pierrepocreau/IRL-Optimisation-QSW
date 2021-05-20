@@ -1,6 +1,7 @@
 from toqito.random import random_unitary
 from toqito.state_ops import pure_to_mixed
 
+import devStrat
 from game import Game
 from seesaw import SeeSaw
 import numpy as np
@@ -72,6 +73,96 @@ def graphState(nbPlayers):
         graphStateVec = 1 / np.sqrt(2**5) * np.array([1, 1, 1, -1, 1, 1, -1, 1, 1, 1, 1, -1, -1, -1, 1, -1, 1, -1,
                                                    1, 1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, 1])
     return np.outer(graphStateVec, graphStateVec)
+
+def genRhoClassic(nbPlayers):
+    n = 2**nbPlayers
+    rho = np.zeros((n, n))
+    rho[0][0] = 1
+    return rho
+
+def classicalStratPOVM(nbPlayers, sym, v0_v1):
+    assert(nbPlayers == 5 or nbPlayers == 3)
+    opDict = {}
+    if nbPlayers == 5:
+        if sym:
+            if v0_v1 <= 1/3:
+                #Not Not 1 1 1
+                #Two players Not
+                for playerId in range(2):
+                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "01"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "11"] = np.array([[0, 0], [0, 0]])
+
+                #Three players 1
+                for playerId in range(2, 5):
+                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "01"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "11"] = np.array([[0, 0], [0, 0]])
+
+            elif v0_v1 >= 1 / 3:
+                # Id Id 1 1 1
+                # Two players Id
+                for playerId in range(2):
+                    opDict[str(playerId) + "00"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "10"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
+
+                # Three players 1
+                for playerId in range(2, 5):
+                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
+        else:
+            if v0_v1 <= 1 / 3:
+                print("v0/v1 = {} Not Not Not Not 1".format(v0_v1))
+                # Not Not Not Not 1
+                for playerId in range(4):
+                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "01"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "11"] = np.array([[0, 0], [0, 0]])
+
+                opDict["4" + "00"] = np.array([[0, 0], [0, 0]])
+                opDict["4" + "10"] = np.array([[1, 0], [0, 1]])
+                opDict["4" + "01"] = np.array([[1, 0], [0, 1]])
+                opDict["4" + "11"] = np.array([[0, 0], [0, 0]])
+
+            elif v0_v1 >= 1 / 3:
+                print("v0/v1 = {} Id Id 1 1 1".format(v0_v1))
+                # Id Id 1 1 1
+                # Two players Id
+                for playerId in range(2):
+                    opDict[str(playerId) + "00"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "10"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
+
+                # Three players 1
+                for playerId in range(2, 5):
+                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
+                    opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
+                    opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
+
+    if nbPlayers == 3:
+        for playerId in range(2):
+            opDict[str(playerId) + "00"] = np.array([[1, 0], [0, 1]])
+            opDict[str(playerId) + "10"] = np.array([[0, 0], [0, 0]])
+            opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
+            opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
+
+        # Three players 1
+        opDict[str(2) + "00"] = np.array([[0, 0], [0, 0]])
+        opDict[str(2) + "10"] = np.array([[1, 0], [0, 1]])
+        opDict[str(2) + "01"] = np.array([[0, 0], [0, 0]])
+        opDict[str(2) + "11"] = np.array([[1, 0], [0, 1]])
+
+    return opDict
+
 
 def seeSawIteration(seeSaw, QeqFlag, init=False):
     '''
@@ -157,19 +248,22 @@ def quantumEqCheck(nbPlayers, v0, v1, POVMS, rho, threshold, dimension=2):
         print("Optimization")
         playerPOVM = seeSaw.sdpPlayer(player, Qeq=True)
         maxUpdate = max(maxUpdate, seeSaw.lastDif)
+        print(maxUpdate)
 
     return maxUpdate <= threshold
 
 
 if __name__ == '__main__':
-    nbPlayers = 5
+    nbPlayers = 3
     v0 = 2/3
     v1 = 1
     dimension = 2
     symmetric=False
     qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, sym=symmetric, dimension=dimension)
-    print(quantumEqCheck(nbPlayers, v0, v1, seeSaw.POVM_Dict, seeSaw.rho, threshold=10e-6, dimension=dimension))
-    print("POVMS")
-    printPOVMS(seeSaw)
-    print("Rho")
-    print(seeSaw.rho)
+    theta = devStrat.optimalTheta(v0, v1, nbPlayers, symmetric)
+    povms = devStrat.generatePOVMs(theta, nbPlayers)
+    rho = devStrat.generateRho(theta, nbPlayers)
+    print(quantumEqCheck(nbPlayers, v0, v1, povms, rho, threshold=10e-6, dimension=dimension))
+
+
+

@@ -1,7 +1,6 @@
 #Functions to generate the deviated strategy for 3 players
 
 import numpy as np
-from seesawUtils import quantumEqCheck
 from scipy.optimize import fmin
 
 def QSW(v0, v1, theta, nbPlayers, sym=False):
@@ -77,22 +76,5 @@ def generateRho(theta, nbPlayers):
                               np.cos(theta/2)**2 * np.sin(theta/2),  -np.cos(theta/2) * np.sin(theta/2)**2,
                               -np.cos(theta / 2) * np.sin(theta / 2) ** 2, -np.sin(theta/2)**3])
     return np.outer(state, state)
-
-
-def qEqTest(v0, v1, nbPlayers):
-    '''
-    return True if the quantum strat deviated from graphstate is a quantum equilibrium for given v0 and v1.
-    '''
-    theta = optimalTheta(v0, v1, nbPlayers)
-    POVMs_Dict = generatePOVMs(theta, nbPlayers)
-    rho = generateRho(theta, nbPlayers)
-    return quantumEqCheck(nbPlayers, v0, v1, POVMs_Dict, rho, 1E-6)
-
-if __name__ == '__main__':
-    nbPlayers = 3
-    v1 = 1
-    v0s = np.linspace(0, 1, 100)
-    for v0 in v0s:
-        print("Qeq test for deviated strategy for v0 = {}: {}".format(v0, qEqTest(v0, v1, nbPlayers)))
 
 

@@ -2,7 +2,8 @@ import numpy as np
 import cvxpy as cp
 from game import Game
 from hierarchie import Hierarchie
-from seesawUtils import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState, ghzState, genRandomPOVMs
+from seesawUtils import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState, ghzState, genRandomPOVMs, \
+    classicalStratPOVM, genRhoClassic
 import matplotlib.pyplot as plt
 from toqito.state_metrics import fidelity
 import devStrat
@@ -49,6 +50,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     QSW_dev = []
     xGraphState = []
     xClassical = []
+    xDev = []
 
     for idx, v0 in enumerate(x):
         print("iteration {}".format(idx))
@@ -101,7 +103,9 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             xClassical.append(v0)
 
             # QSW for deviated strat
+        if devStrat.DevNash(v0, v1, nbPlayers):
             dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+            xDev.append(v0)
             QSW_dev.append(dev)
 
     try:
@@ -169,7 +173,8 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         prevMax = 1
 
         for it, v0 in enumerate(reversed(x)):
-            print("\nGlobal Iteration {}".format(it))
+
+            print("\nGlobal Iteration {} v0 {}".format(it, v0))
             maxQsw = 0
 
             nbRepeat = seeSawRepeatLow * (v0 < treshold) + seeSawRepeatHigh * (v0 >= treshold)
@@ -185,6 +190,11 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                 if r == 1:
                     #Takes best init for last value of v0
                     qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=lastInit, sym=sym, dimension=dimension)
+
+                if r == 2:
+                    initClassical = (classicalStratPOVM(nbPlayers, sym, v0), genRhoClassic(nbPlayers))
+                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=initClassical, sym=sym, dimension=dimension)
+                    
                 else:
                     #Random init
                     init = (seeSaw.genPOVMs(), seeSaw.genRho())
@@ -203,18 +213,34 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             # If huge diff, we do another cyle on a strategy which as already been optimized.
             # Otherwise we have "holes" where the qsw collapse when we shift of strategy class
             # (i.e when we go from quantum strat to classicals)
-            while (maxDiff >= 0.05 and v0 != 0):
+            iter = 0
+            while maxDiff >= 0.05 and v0 != 0 and iter <= 1:
                 print("another cycle")
-
-                init = (bestSeeSaw.POVM_Dict, seeSaw.genRho())
-                qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, sym=sym, dimension=dimension)
-
+#
+                #Best of last iteration
+                if iter == 0:
+                    init = (bestSeeSaw.genPOVMs(), seeSaw.genRho())
+                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, sym=sym, dimension=dimension)
+#
+#                #GraphState povms
+                if iter == 1:
+                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=lastGraphStateInit, sym=sym, dimension=dimension)
+#
+#                else:
+#                    init = (seeSaw.genPOVMs(), seeSaw.genRho())
+#                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym, dimension=dimension)
+#                    init = (seeSaw.POVM_Dict, seeSaw.genRho())
+#                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym, dimension=dimension)
+#
+#
                 maxQsw = max(maxQsw, qsw)
 
                 if maxQsw == qsw:
                     bestSeeSaw = seeSaw
                     maxDiff = abs(prevMax - maxQsw)
-
+#
+                iter+=1
+#
             prevMax = maxQsw
             QSW_SeeSaw.append(maxQsw)
             Winrate_SeeSaw.append(bestSeeSaw.winrate)
@@ -245,9 +271,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     axs.plot(x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
     axs.plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
     axs.plot(xClassical, SW_classical, label="SW best classical strat")
-
-    if nbPlayers == 3:
-        axs.plot(x, QSW_dev, label="stratégie deviée")
+    axs.plot(xDev, QSW_dev, label="SW of deviated strat")
 
     axs.set_title("Quantum social welfare")
     axs.set_xlabel("V0/V1")
