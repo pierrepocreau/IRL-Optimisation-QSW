@@ -6,8 +6,9 @@ from seesawUtils import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState, ghz
     classicalStratPOVM, genRhoClassic
 import matplotlib.pyplot as plt
 from toqito.state_metrics import fidelity
-import devStrat
+import quantumStrategies
 import os
+from classicalStrategies import bestClassicalStrategy
 
 
 def readFile(file):
@@ -39,8 +40,9 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     else: P = P3
     x = np.linspace(0, 1, points)
 
-    v1 = 1
     paramV0 = cp.Parameter()
+    v1 = 2 - paramV0
+
     game = Game(nbPlayers, paramV0, v1, sym)
     prob = Hierarchie(game, P)
 
@@ -54,57 +56,20 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 
     for idx, v0 in enumerate(x):
         print("iteration {}".format(idx))
+        game.v0.value = v0
 
-        #QSW of graphstate Strat, add only for equlibrium
-        qswGraphState = (v0 + v1) / 2
+        SWGraph = quantumStrategies.graphStateStrategy(game)
+        if SWGraph is not None:
+            QSW_GraphState.append(SWGraph)
+            xGraphState.append(game.v0.value)
 
-        if nbPlayers == 5:
-            if not sym and v0 >= 1/2:
-                QSW_GraphState.append(qswGraphState)
-                xGraphState.append(v0)
+        SW_classical.append(bestClassicalStrategy(game))
+        print(bestClassicalStrategy(game))
+        xClassical.append(game.v0.value)
 
-            elif sym and v0 >= 1/3:
-                QSW_GraphState.append(qswGraphState)
-                xGraphState.append(v0)
-
-
-        elif nbPlayers == 3:
-            QSW_GraphState.append(qswGraphState)
-            xGraphState.append(v0)
-
-        #classical strats for 5 players:
-        if nbPlayers == 5:
-            if not sym:
-                if v0 <= 1/3:
-                    d = 8*v0 + 17*v1
-                    bestClassical = 1/30 * d
-                    SW_classical.append(bestClassical)
-
-                elif 1/3 < v0:
-                    b = 6*v0 + 19*v1
-                    bestClassical = 1/30 * b
-                    SW_classical.append(bestClassical)
-
-            else:
-                if v0 <= 1/3:
-                    bestClassical = 1/30*(4*v0 + 11*v1)
-                    SW_classical.append(bestClassical)
-
-                elif 1/3 < v0:
-                    bestClassical = 1/30*(5*v0 + 20*v1)
-                    SW_classical.append(bestClassical)
-            xClassical.append(v0)
-
-        if nbPlayers == 3:
-            # SW for a classical strat (I don't know if it works for 5 players too)
-            # Pour 5 rajouter meilleur (papier)
-            a3 = 7 / 12 + 1 / 6 * v0
-            SW_classical.append(a3)
-            xClassical.append(v0)
-
-            # QSW for deviated strat
-        if devStrat.DevNash(v0, v1, nbPlayers):
-            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        # QSW for deviated strat
+        if quantumStrategies.DevNash(game):
+            dev = quantumStrategies.QSW(game, quantumStrategies.optimalTheta(game))
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -276,7 +241,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     axs.set_title("Quantum social welfare")
     axs.set_xlabel("V0/V1")
     axs.set_ylabel("QSW")
-    axs.set_ylim([0, 1])
+    axs.set_ylim([0, 2])
     axs.legend(loc="upper right")
 
     plt.show()

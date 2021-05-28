@@ -1,7 +1,7 @@
 from toqito.random import random_unitary
 from toqito.state_ops import pure_to_mixed
 
-import devStrat
+import quantumStrategies
 from game import Game
 from seesaw import SeeSaw
 import numpy as np
@@ -260,9 +260,9 @@ if __name__ == '__main__':
     dimension = 2
     symmetric=False
     qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, sym=symmetric, dimension=dimension)
-    theta = devStrat.optimalTheta(v0, v1, nbPlayers, symmetric)
-    povms = devStrat.generatePOVMs(theta, nbPlayers)
-    rho = devStrat.generateRho(theta, nbPlayers)
+    theta = quantumStrategies.optimalTheta(v0, v1, nbPlayers, symmetric)
+    povms = quantumStrategies.generatePOVMs(theta, nbPlayers)
+    rho = quantumStrategies.generateRho(theta, nbPlayers)
     print(quantumEqCheck(nbPlayers, v0, v1, povms, rho, threshold=10e-6, dimension=dimension))
 
 

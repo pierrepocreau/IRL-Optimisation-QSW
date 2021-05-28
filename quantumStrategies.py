@@ -3,17 +3,19 @@
 import numpy as np
 from scipy.optimize import fmin
 
-def QSW(v0, v1, theta, nbPlayers, sym=False):
+def QSW(game, theta):
     '''
     Calculations made in mathematica.
     '''
-    assert(nbPlayers == 3 or nbPlayers == 5)
-    if nbPlayers == 3:
+    assert(game.nbPlayers == 3 or game.nbPlayers == 5)
+    v0, v1 = game.v0.value, game.v1.value
+
+    if game.nbPlayers == 3:
         return 1 / 192 * (99 * v0 + 81 * v1 + 32 * (v0 - v1) * np.cos(theta) + 8 * (v0 - v1) * np.cos(
             2 * theta) + 5 * v0 * np.cos(4 * theta) + 7 * v1 * np.cos(4 * theta))
 
-    if nbPlayers == 5:
-        if not sym:
+    if game.nbPlayers == 5:
+        if not game.sym:
             return 1/6144 * (2874*v0 + 2278*v1 + 1984 * (v0 - v1) * np.cos(theta) -
                     2*(v0 + 249*v1)*np.cos(2 * theta) + 32*v0*np.cos(3 * theta) -
                     32*v1*np.cos(3 * theta) + 200*v0*np.cos(4 * theta) +
@@ -31,18 +33,22 @@ def QSW(v0, v1, theta, nbPlayers, sym=False):
                     2*v0 * np.cos(8 * theta) + 2*v1 * np.cos(8 * theta) - v0 * np.cos(10 * theta) -
                     v1 * np.cos(10 * theta))
 
-def DevNash(v0, v1, nbPlayers, sym=False):
+def DevNash(game):
     '''
+    Return true if the deviated strategy is an equilibrium for a given ratio of v0 / V1.
+
     Value obtained via mathematica.
-    I took them with my cursor on the grpah... But the equations are to complicated to copy from mathematica to python.
+    I took them with my cursor on the graph... But the equations are to complicated to copy from mathematica to python.
     Not very rigorous.
     '''
-    assert(nbPlayers == 3 or nbPlayers == 5)
-    if nbPlayers == 3:
+    assert(game.nbPlayers == 3 or game.nbPlayers == 5)
+    v0, v1 = game.v0.value, game.v1.value
+
+    if game.nbPlayers == 3:
         return v0/v1 >= 0.12
 
-    if nbPlayers == 5:
-        if sym:
+    if game.nbPlayers == 5:
+        if game.sym:
             return v0/v1 >= 0.38
 
         else:
@@ -50,12 +56,12 @@ def DevNash(v0, v1, nbPlayers, sym=False):
 
 
 
-def optimalTheta(v0, v1, nbPlayers, sym=False):
+def optimalTheta(game):
     '''
     Return the theta that maximize the deviated strategy for given v0 and v1.
     '''
-    assert(nbPlayers == 3 or nbPlayers == 5)
-    theta = fmin(lambda theta: - QSW(v0, v1, theta, nbPlayers, sym), np.pi/2, disp=False)
+    assert(game.nbPlayers == 3 or game.nbPlayers == 5)
+    theta = fmin(lambda theta: - QSW(game, theta), np.pi/2, disp=False)
     return theta
 
 def generatePOVMs(theta, nbPlayers):
@@ -77,4 +83,26 @@ def generateRho(theta, nbPlayers):
                               -np.cos(theta / 2) * np.sin(theta / 2) ** 2, -np.sin(theta/2)**3])
     return np.outer(state, state)
 
+def graphStateStrategy(game):
+    """
+    Social welfare of the strategy based on measurements of the graphState
+    """
+    v0, v1 = game.v0.value, game.v1.value
+    payoutRatio = v0 / v1
 
+    assert(game.nbPlayers == 3 or game.nbPlayers == 5)
+    assert(0 <= payoutRatio <= 1)
+
+    socialWelfare = (game.v0.value + game.v1.value)/2
+
+    if game.nbPlayers == 5:
+        if game.sym:
+            if payoutRatio >= 1/3:
+                return socialWelfare
+        else:
+            if payoutRatio >= 1/2:
+                return socialWelfare
+    else:
+        return socialWelfare
+
+    return None # If none of the case above is verified, the graph strat strategy is not a correlated equilibrium.

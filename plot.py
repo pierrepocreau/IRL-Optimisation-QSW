@@ -1,4 +1,4 @@
-import devStrat
+import quantumStrategies
 from graph import readFile
 import matplotlib.pylab as plt
 import numpy as np
@@ -98,8 +98,8 @@ def plotSeeSaw5():
     v1 = 1
     nbPlayers = 5
     for v0 in x:
-        if devStrat.DevNash(v0, v1, nbPlayers):
-            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        if quantumStrategies.DevNash(v0, v1, nbPlayers):
+            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers), nbPlayers)
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -150,8 +150,8 @@ def plotSeesaw3():
     v1 = 1
     nbPlayers = 3
     for v0 in x:
-        if devStrat.DevNash(v0, v1, nbPlayers):
-            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        if quantumStrategies.DevNash(v0, v1, nbPlayers):
+            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers), nbPlayers)
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -203,8 +203,8 @@ def plotSeeSaw5Sym():
     v1 = 1
     nbPlayers = 5
     for v0 in x:
-        if devStrat.DevNash(v0, v1, nbPlayers, sym=True):
-            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers, sym=True), nbPlayers, sym=True)
+        if quantumStrategies.DevNash(v0, v1, nbPlayers, sym=True):
+            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers, sym=True), nbPlayers, sym=True)
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -252,8 +252,8 @@ def plotdev3():
     v1 = 1
     nbPlayers = 3
     for v0 in x:
-        if devStrat.DevNash(v0, v1, nbPlayers):
-            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        if quantumStrategies.DevNash(v0, v1, nbPlayers):
+            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers), nbPlayers)
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -297,8 +297,8 @@ def plot5SymDev():
     v1 = 1
     nbPlayers = 5
     for v0 in x:
-        if devStrat.DevNash(v0, v1, nbPlayers, sym=True):
-            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers, sym=True), nbPlayers, sym=True)
+        if quantumStrategies.DevNash(v0, v1, nbPlayers, sym=True):
+            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers, sym=True), nbPlayers, sym=True)
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -346,8 +346,8 @@ def plot5Dev():
     v1 = 1
     nbPlayers = 5
     for v0 in x:
-        if devStrat.DevNash(v0, v1, nbPlayers):
-            dev = devStrat.QSW(v0, v1, devStrat.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        if quantumStrategies.DevNash(v0, v1, nbPlayers):
+            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers), nbPlayers)
             xDev.append(v0)
             QSW_dev.append(dev)
 
