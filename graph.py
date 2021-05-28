@@ -2,13 +2,13 @@ import numpy as np
 import cvxpy as cp
 from game import Game
 from hierarchie import Hierarchie
-from seesawUtils import fullSeeSaw, printPOVMS, graphStatePOVMS, graphState, ghzState, genRandomPOVMs, \
-    classicalStratPOVM, genRhoClassic
+from classicalStrategies import genRhoClassic, classicalStratPOVM, bestClassicalStrategy
+from quantumStrategies import graphStatePOVMS, graphState, ghzState, genRandomPOVMs
+from seesawUtils import fullSeeSaw, quantumEqCheck, printPOVMS
 import matplotlib.pyplot as plt
 from toqito.state_metrics import fidelity
 import quantumStrategies
 import os
-from classicalStrategies import bestClassicalStrategy
 
 
 def readFile(file):
@@ -68,7 +68,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         xClassical.append(game.v0.value)
 
         # QSW for deviated strat
-        if quantumStrategies.DevNash(game):
+        if quantumStrategies.devStratIsNashEq(game):
             dev = quantumStrategies.QSW(game, quantumStrategies.optimalTheta(game))
             xDev.append(v0)
             QSW_dev.append(dev)
@@ -119,7 +119,8 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     except:
         print("SeeSaw")
         graphStateMatrix = graphState(nbPlayers)
-        #init = (genRandomPOVMs(nbPlayers), ghzState(nbPlayers))
+        game = Game(nbPlayers, 0, 0, sym)
+
         lastGraphStateInit = (graphStatePOVMS(nbPlayers), graphStateMatrix)
         lastInit = (graphStatePOVMS(nbPlayers), graphStateMatrix)
 
@@ -138,6 +139,8 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
         prevMax = 1
 
         for it, v0 in enumerate(reversed(x)):
+            game.v0 = v0
+            game.v1 = 2 - v0
 
             print("\nGlobal Iteration {} v0 {}".format(it, v0))
             maxQsw = 0
@@ -150,20 +153,20 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
 
                 if r == 0:
                     # Following strat with POVMs near graphstate ones
-                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=lastGraphStateInit, sym=sym, dimension=dimension)
+                    qsw, seeSaw = fullSeeSaw(game, dimension=dimension, init=lastGraphStateInit)
                     lastGraphStateInit = (seeSaw.POVM_Dict, seeSaw.genRho())
                 if r == 1:
                     #Takes best init for last value of v0
-                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=lastInit, sym=sym, dimension=dimension)
+                    qsw, seeSaw = fullSeeSaw(game, dimension=dimension, init=lastInit)
 
                 if r == 2:
-                    initClassical = (classicalStratPOVM(nbPlayers, sym, v0), genRhoClassic(nbPlayers))
-                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=initClassical, sym=sym, dimension=dimension)
+                    initClassical = (classicalStratPOVM(game), genRhoClassic(game.nbPlayers))
+                    qsw, seeSaw = fullSeeSaw(game, dimension=dimension, init=initClassical)
                     
                 else:
                     #Random init
                     init = (seeSaw.genPOVMs(), seeSaw.genRho())
-                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym, dimension=dimension)
+                    qsw, seeSaw = fullSeeSaw(game, dimension=dimension, init=init)
 
                 maxQsw = max(maxQsw, qsw)
 
@@ -185,17 +188,17 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
                 #Best of last iteration
                 if iter == 0:
                     init = (bestSeeSaw.genPOVMs(), seeSaw.genRho())
-                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init, sym=sym, dimension=dimension)
+                    qsw, seeSaw = fullSeeSaw(game, dimension=dimension, init=init)
 #
 #                #GraphState povms
                 if iter == 1:
-                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=lastGraphStateInit, sym=sym, dimension=dimension)
+                    qsw, seeSaw = fullSeeSaw(game, dimension=dimension, init=lastGraphStateInit)
 #
 #                else:
 #                    init = (seeSaw.genPOVMs(), seeSaw.genRho())
-#                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym, dimension=dimension)
+#                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym)
 #                    init = (seeSaw.POVM_Dict, seeSaw.genRho())
-#                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym, dimension=dimension)
+#                    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, init=init,  sym=sym)
 #
 #
                 maxQsw = max(maxQsw, qsw)
@@ -217,7 +220,6 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
             print(bestSeeSaw.rho)
             print("Trace of rho squared:", np.trace(np.dot(bestSeeSaw.rho, bestSeeSaw.rho)))
             print("Fidelity with graphState", fidelity(bestSeeSaw.rho, graphStateMatrix))
-            print("Fidelity with ghzState", fidelity(bestSeeSaw.rho, ghzState(nbPlayers)))
 
         with open('data/{}Players_{}Points_Sym{}_SeeSaw.txt'.format(nbPlayers, points, sym), 'w') as f:
             for item in QSW_SeeSaw:

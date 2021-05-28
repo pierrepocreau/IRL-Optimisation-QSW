@@ -1,11 +1,7 @@
-from toqito.random import random_unitary
-from toqito.state_ops import pure_to_mixed
-
 import quantumStrategies
 from game import Game
 from seesaw import SeeSaw
 import numpy as np
-import matplotlib.pyplot as plt
 
 def printPOVMS(seeSaw):
     for id in range(seeSaw.game.nbPlayers):
@@ -17,174 +13,21 @@ def printPOVMS(seeSaw):
                 print(np.dot(seeSaw.POVM_Dict[str(id) + answer + type] , seeSaw.POVM_Dict[str(id) + answer + type]))
                 print("\n")
 
-def graphStatePOVMS(nbPlayers):
-    POVMS_Dict = {}
-    for id in range(nbPlayers):
-        POVMS_Dict[str(id) + "00"] = np.array([[1, 0], [0, 0]])
-        POVMS_Dict[str(id) + "10"] = np.array([[0, 0], [0, 1]])
-        POVMS_Dict[str(id) + "01"] = np.array([[0.5, 0.5], [0.5, 0.5]])
-        POVMS_Dict[str(id) + "11"] = np.array([[0.5, -0.5], [-0.5, 0.5]])
-    return POVMS_Dict
-
-
-def genRandomPOVMs(nbJoueurs, dimension = 2):
+def seeSawIteration(seeSaw, QeqFlag):
     '''
-    Initialise each player with random POVMs
-    '''
-    opDict = {}
-    for playerId in range(nbJoueurs):
-        for type in ["0", "1"]:
-            U = random_unitary(dimension)
-            for answer in ["0", "1"]:
-
-                if (dimension > 2):
-                    print("Mauvaise implémentation de la dimension, cf seesaw - ligne 63")
-                    exit(0)
-
-                proj = np.transpose([U[int(answer)]])
-                opDict[str(playerId) + answer + type] = pure_to_mixed(proj)
-
-    return opDict
-
-def ghzState(nbPlayers):
-    """
-    Return the density matrix associated to the ghz for 3 or 5 players.
-    """
-    assert(nbPlayers == 3 or nbPlayers == 5)
-    if nbPlayers == 3:
-        ghzVec = 1 / np.sqrt(2) * np.array([1, 0, 0, 0, 0, 0, 0, 1])
-
-    elif nbPlayers == 5:
-        ghzVec = 1 / np.sqrt(2) * np.array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
-
-
-    return np.outer(ghzVec, ghzVec)
-
-
-def graphState(nbPlayers):
-    """
-    Return the density matrix associated to the graphState for 3 or 5 players.
-    """
-    assert(nbPlayers == 3 or nbPlayers == 5)
-    if nbPlayers == 3:
-        graphStateVec = 1 / np.sqrt(2**3) * np.array([1, 1, 1, -1, 1, -1, -1, -1])
-    elif nbPlayers == 5:
-        graphStateVec = 1 / np.sqrt(2**5) * np.array([1, 1, 1, -1, 1, 1, -1, 1, 1, 1, 1, -1, -1, -1, 1, -1, 1, -1,
-                                                   1, 1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, 1])
-    return np.outer(graphStateVec, graphStateVec)
-
-def genRhoClassic(nbPlayers):
-    n = 2**nbPlayers
-    rho = np.zeros((n, n))
-    rho[0][0] = 1
-    return rho
-
-def classicalStratPOVM(nbPlayers, sym, v0_v1):
-    assert(nbPlayers == 5 or nbPlayers == 3)
-    opDict = {}
-    if nbPlayers == 5:
-        if sym:
-            if v0_v1 <= 1/3:
-                #Not Not 1 1 1
-                #Two players Not
-                for playerId in range(2):
-                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "01"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "11"] = np.array([[0, 0], [0, 0]])
-
-                #Three players 1
-                for playerId in range(2, 5):
-                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "01"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "11"] = np.array([[0, 0], [0, 0]])
-
-            elif v0_v1 >= 1 / 3:
-                # Id Id 1 1 1
-                # Two players Id
-                for playerId in range(2):
-                    opDict[str(playerId) + "00"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "10"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
-
-                # Three players 1
-                for playerId in range(2, 5):
-                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
-        else:
-            if v0_v1 <= 1 / 3:
-                print("v0/v1 = {} Not Not Not Not 1".format(v0_v1))
-                # Not Not Not Not 1
-                for playerId in range(4):
-                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "01"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "11"] = np.array([[0, 0], [0, 0]])
-
-                opDict["4" + "00"] = np.array([[0, 0], [0, 0]])
-                opDict["4" + "10"] = np.array([[1, 0], [0, 1]])
-                opDict["4" + "01"] = np.array([[1, 0], [0, 1]])
-                opDict["4" + "11"] = np.array([[0, 0], [0, 0]])
-
-            elif v0_v1 >= 1 / 3:
-                print("v0/v1 = {} Id Id 1 1 1".format(v0_v1))
-                # Id Id 1 1 1
-                # Two players Id
-                for playerId in range(2):
-                    opDict[str(playerId) + "00"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "10"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
-
-                # Three players 1
-                for playerId in range(2, 5):
-                    opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
-                    opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
-                    opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
-
-    if nbPlayers == 3:
-        for playerId in range(2):
-            opDict[str(playerId) + "00"] = np.array([[1, 0], [0, 1]])
-            opDict[str(playerId) + "10"] = np.array([[0, 0], [0, 0]])
-            opDict[str(playerId) + "01"] = np.array([[0, 0], [0, 0]])
-            opDict[str(playerId) + "11"] = np.array([[1, 0], [0, 1]])
-
-        # Three players 1
-        opDict[str(2) + "00"] = np.array([[0, 0], [0, 0]])
-        opDict[str(2) + "10"] = np.array([[1, 0], [0, 1]])
-        opDict[str(2) + "01"] = np.array([[0, 0], [0, 0]])
-        opDict[str(2) + "11"] = np.array([[1, 0], [0, 1]])
-
-    return opDict
-
-
-def seeSawIteration(seeSaw, QeqFlag, init=False):
-    '''
-    Make a seesaw iteration
-    :param QeqFlag: If true, we don't optimise Rho.
-    :param init: If true, we don't initialize Rho.
-    :return:
+    Make a seesaw iteration.
     '''
     maxDif = 0
 
-    if not (QeqFlag or init):
+    # We start by optimizing on rho. Except if QeqFlag is true.
+    if not QeqFlag:
             print("Optimisation de rho")
             rho = seeSaw.sdpRho()
             seeSaw.updateRho(rho)
     else:
         print("Optimisation du gain de chaque joueur.")
 
-    #optimOrder = list(range(seeSaw.nbJoueurs))
-    #random.shuffle(optimOrder)
-    optimOrder = range(seeSaw.nbJoueurs)
-
-    for player in optimOrder:
+    for player in range(seeSaw.nbJoueurs):
         print("player {}".format(player))
         playerPOVM = seeSaw.sdpPlayer(player, QeqFlag)
         seeSaw.update(player, playerPOVM)
@@ -194,51 +37,40 @@ def seeSawIteration(seeSaw, QeqFlag, init=False):
     print("Winrate {}".format(seeSaw.winrate))
     return maxDif
 
-def fullSeeSaw(nbJoueurs, v0, v1, init=None, sym=False, treshold=1e-6, dimension=2):
+def fullSeeSaw(game, dimension=2, init=None, treshold=1e-6):
     '''
-    Réalise des itérations seesaw jusque convergence
+    Seesaw iterations until convergence.
     '''
-
-    game = Game(nbJoueurs, v0,v1, sym)
     seeSaw = SeeSaw(dimension=dimension, game=game, init=init)
 
-    maxDif = 1
+    maxDif = np.infty
     iteration = 1
+    iterationTreshold = 60
 
-    #Optimisation of QSW with modification of Rho and POVMs
+    #Optimisation of QSW with modification of both Rho and POVMs.
     while maxDif >= treshold:
-        initFlag = False #Init flag is set to none because rho is the first thing to be optimized anyway..
-
-        #With the graphState we could specify the measurement povms and optimize rho first.
-        #With ghzState, we only know the state, so we first optimize the povms
-        #It's a bit of a quick fixe, we could do something more general.
-        if init is not None:
-            state = init[1]
-            if (state ==  ghzState(nbJoueurs)).all():
-                initFlag = True
-
         print("\niteration {}".format(iteration))
-        maxDif = seeSawIteration(seeSaw, QeqFlag=False, init=initFlag)
+        maxDif = seeSawIteration(seeSaw, QeqFlag=False)
         iteration += 1
-
         #Abort if iteration don't converge fast enough
-        if iteration >= 60: return 0, seeSaw
+        if iteration >= iterationTreshold: return 0, seeSaw
 
-    maxDif = 1
+    maxDif = np.infty
 
-    #Optimisation of each player's payout, without modification of rho
+    #Optimisation of each player's payout, without modification of rho. (equivalent to quantum equlibrium check SDP)
     while maxDif >= treshold:
         print("\niteration {}".format(iteration))
-        maxDif = seeSawIteration(seeSaw, QeqFlag=True, init=False)
+        maxDif = seeSawIteration(seeSaw, QeqFlag=True)
         iteration += 1
-
-        if iteration >= 120: return 0, seeSaw
+        if iteration >= iterationTreshold: return 0, seeSaw
 
     return seeSaw.QSW, seeSaw
 
-def quantumEqCheck(nbPlayers, v0, v1, POVMS, rho, threshold, dimension=2):
+def quantumEqCheck(game, POVMS, rho, threshold, dimension=2):
+    """
+    SDP to check if a strategy is a quantum equlibrium.
+    """
     print("\nQuantum equilibrium check")
-    game = Game(nbPlayers, v0, v1, sym=False)
     seeSaw = SeeSaw(dimension=dimension, game=game, init=(POVMS, rho))
 
     maxUpdate = 0
@@ -256,14 +88,21 @@ def quantumEqCheck(nbPlayers, v0, v1, POVMS, rho, threshold, dimension=2):
 if __name__ == '__main__':
     nbPlayers = 3
     v0 = 2/3
-    v1 = 1
+    v1 = 2 - v0
     dimension = 2
     symmetric=False
-    qsw, seeSaw = fullSeeSaw(nbPlayers, v0, v1, sym=symmetric, dimension=dimension)
-    theta = quantumStrategies.optimalTheta(v0, v1, nbPlayers, symmetric)
-    povms = quantumStrategies.generatePOVMs(theta, nbPlayers)
-    rho = quantumStrategies.generateRho(theta, nbPlayers)
-    print(quantumEqCheck(nbPlayers, v0, v1, povms, rho, threshold=10e-6, dimension=dimension))
+    game = Game(nbPlayers, v0, v1, sym=symmetric)
+    qsw, seeSaw = fullSeeSaw(game, dimension=dimension)
+
+    print("Test if seesaw strategy is quantum equilibrium: ",
+          quantumEqCheck(game, seeSaw.POVM_Dict, seeSaw.rho, threshold=10e-6, dimension=dimension))
+
+    theta = quantumStrategies.optimalTheta(game)
+    povms = quantumStrategies.devStratPOVMs(theta, nbPlayers)
+    rho = quantumStrategies.devStratRho(theta, nbPlayers)
+
+    print("Test if deviated strategy is quantum equilibrium: ",
+          quantumEqCheck(game, povms, rho, threshold=10e-6, dimension=dimension))
 
 
 

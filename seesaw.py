@@ -34,6 +34,7 @@ class SeeSaw:
                 proba = self.proba(answer, question)
                 playerPayout += self.game.questionDistribution * self.game.playerPayoutWin(answer, playerId) * proba
 
+        print(playerPayout)
         self.lastDif = max(np.abs(self.playersPayout[playerId] - playerPayout), self.lastDif)
         self.playersPayout[playerId] = playerPayout
 
