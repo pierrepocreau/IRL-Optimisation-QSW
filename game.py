@@ -1,6 +1,10 @@
 import itertools
 
 class Game:
+    """
+    Class representing a NC(G) game.
+    Three games are possible: NC(C_3), NC_00(C_5) and NC_01(C_5)
+    """
 
     def __init__(self, nbPlayers, v0, v1, sym=False):
         assert(nbPlayers == 3 or nbPlayers == 5)
@@ -48,12 +52,11 @@ class Game:
         return the set of involved players for a specific question
         '''
 
+        #If the question is 111 or 11111
         if question.count("1") == self.nbPlayers:
             return list(range(self.nbPlayers))
 
-        #Pour 5 ça ne fonctionne pas pour 11111
         playedType1 = question.index('1')
-
         # Symmetric question, we must choose the correct player with type 1.
         if question.count("1") == 2:
             if question[playedType1 + 2] != "1":
@@ -96,7 +99,6 @@ class Game:
         '''
         Return the payout of a specific player.
         '''
-        #CHanger nom
         playerAnswer = answer[playerId]
         return self.v1 * (playerAnswer == '1') + self.v0 * (playerAnswer == '0')
 
