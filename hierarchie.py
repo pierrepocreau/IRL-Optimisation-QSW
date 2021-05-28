@@ -5,47 +5,42 @@ from canonicOp import CanonicMonome
 import itertools
 
 class Hierarchie:
+    """
+    Class for the implementation of the modified NPA's hierarchy.
+    """
 
     def __init__(self, game, operatorsPlayers):
         self.game = game
 
+        # Creation of the list of monomials.
         self.operatorsPlayers = operatorsPlayers
         self.monomeList = [list(s) for s in itertools.product(*operatorsPlayers)]
         self.n = len(self.monomeList)
 
+        # Dict for reducing the numbers of SDP variables.
         self.variableDict = {}
         self.variablePosition = {}
 
+        # Constraints and SDP variables.
         self.constraints = []
         self.X = cp.bmat(self.init_variables())
         self.constraints += [self.X >> 0] #SDP
         self.constraints += [self.X[0][0] == 1] #Normalization
 
+        # Objectif function and cvxpy problem.
         self.objectifFunc = self.objectifFunctions(game)
         self.prob = cp.Problem(cp.Maximize(cp.sum(self.X[0] @ cp.bmat(self.objectifFunc))), self.constraints)
 
+
     def updateProb(self):
+        """
+        Function which update the cvxpy problem.
+        """
         self.prob = cp.Problem(cp.Maximize(cp.sum(self.X[0] @ cp.bmat(self.objectifFunc))), self.constraints)
-
-    def init_variables(self):
-        matrix = self.projectorConstraints()
-        variablesDict = {}
-        variable = [[None for i in range(self.n)] for j in range(self.n)]
-
-        for line in range(self.n):
-            for column in range(self.n):
-
-                varId = matrix[line][column]
-                if varId not in variablesDict:
-                    variablesDict[varId] = cp.Variable()
-
-                variable[line][column] = variablesDict[varId]
-
-        return variable
 
     def projectorConstraints(self):
         '''
-        Creation of projection constraints
+        Create the matrix filled with the cannonic representation of each element of the moment matrix.
         '''
         matrix = np.zeros((self.n, self.n))
         variableId = 0
@@ -55,6 +50,7 @@ class Hierarchie:
                 var = CanonicMonome(self.monomeList, i, j, self.operatorsPlayers)
 
                 if var not in self.variableDict:
+                    # If no other element as the same cannonic representation has *var*, a new SDP variable will be created.
                     self.variableDict[var] = variableId
                     self.variablePosition[variableId] = (i, j)
                     variableId += 1
@@ -63,10 +59,30 @@ class Hierarchie:
 
         return matrix
 
+    def init_variables(self):
+        """
+        Initialise the cvxpy variables.
+        """
+        matrix = self.projectorConstraints()
+        variablesDict = {}
+        variable = [[None for i in range(self.n)] for j in range(self.n)]
+
+        for line in range(self.n):
+            for column in range(self.n):
+
+                varId = matrix[line][column]
+                if varId not in variablesDict:
+                    # One variable for each cannonic element of the matrix of moments.
+                    variablesDict[varId] = cp.Variable()
+
+                variable[line][column] = variablesDict[varId]
+
+        return variable
+
 
     def setNashEqConstraints(self):
         '''
-        Creation of Nash Equilibrium constraint
+        Creation of the set of Nash Equilibrium constraint.
         '''
         for playerId in range(self.game.nbPlayers):
 
@@ -82,10 +98,10 @@ class Hierarchie:
                 for noti in ['0', '1']:
                     payoutVecNot = []
                     for question in self.game.questions():
-                        #Answers where the player doesn't not his answer
+                        #Answers where the player doesn't defect from its advice
                         untouchedAnswers = lambda answer: question[playerId] != type or answer[playerId] != noti
 
-                        #Answers where the player not his answer
+                        #Answers where the player defect from its advice
                         notAnswers = lambda answer: question[playerId] == type and answer[playerId] == noti
 
                         # if he is not involved, the set of accepted answer is the same
@@ -97,7 +113,7 @@ class Hierarchie:
                             for validAnswer in filter(notAnswers, self.game.validAnswerIt(question)):
                                 payoutVecNot.append(self.genVecPlayerNotPayoutWin(validAnswer, question, playerId))
 
-                        #The player is involved. He loose on the accepted answer where he nots. But some rejected answers
+                        #The player is involved. He loose on the accepted answer where he defect. But some rejected answers
                         #are now accepted.
                         else:
                             for validAnswer in filter(untouchedAnswers, self.game.validAnswerIt(question)):
@@ -114,7 +130,7 @@ class Hierarchie:
 
     def genVec(self, answer, question):
         '''
-        Generate the encoding vector to get the probability of the answer given the question
+        Generate the encoding vector to get the probability of the answer given the question.
         '''
         assert(len(answer) == len(question) == self.game.nbPlayers)
 
@@ -161,7 +177,7 @@ class Hierarchie:
 
     def genVecPlayerNotPayoutWin(self, answer, question, playerdId):
         """
-        Payout of a player, if he not is answer.
+        Payout of a player, if he defect from its advice.
         """
         coef = self.game.notPlayerPayoutWin(answer, playerdId)
         return list(map(lambda x: x * coef, self.genVec(answer, question)))
@@ -174,6 +190,9 @@ class Hierarchie:
         return list(map(lambda x: x * coef, self.genVec(answer, question)))
 
     def objectifFunctions(self, game):
+        """
+        The objectif function is the social welfare.
+        """
         objectifFunctionPayout = []
 
         for question in game.questions():
@@ -185,6 +204,9 @@ class Hierarchie:
         return objectifFunction
 
     def optimize(self, verbose, warmStart, solver):
+        """
+        Optimize on a given solver.
+        """
         assert(solver == "SCS" or solver == "MOSEK")
         if solver == "SCS":
             self.prob.solve(solver=cp.SCS, verbose=verbose, warm_start=warmStart)
