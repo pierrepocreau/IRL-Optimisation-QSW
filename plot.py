@@ -3,7 +3,7 @@ from graph import readFile
 import matplotlib.pylab as plt
 import numpy as np
 from cycler import cycler
-
+from game import Game
 
 def plotHierarchie3():
     plt.rc('text', usetex=True)
@@ -98,8 +98,9 @@ def plotSeeSaw5():
     v1 = 1
     nbPlayers = 5
     for v0 in x:
-        if quantumStrategies.devStratIsNashEq(v0, v1, nbPlayers):
-            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        game = Game(nbPlayers, v0, v1, sym=False)
+        if quantumStrategies.devStratIsNashEq(game):
+            dev = quantumStrategies.QSW(game, quantumStrategies.optimalTheta(game))
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -137,21 +138,22 @@ def plotSeesaw3():
     hierarchieNash = readFile('data/3Players_100Points_SymFalse_HierarchieNash.txt')
     x = np.linspace(0, 1, 100)
 
-    classicalfunc = lambda v0: 1/12*(2*v0 + 7)  #(Id 1 1)
+    classicalfunc = lambda v0: 1/12*(2*v0 + 7*(2 - v0))  #(Id 1 1)
 
     xclassical = list(x)
     classical = list(map(classicalfunc, xclassical))
 
     xGraphState = list(x)
-    graphState = list(map(lambda i: (1 + i)/2, xGraphState))
+    graphState = list(map(lambda v0: (2 - v0 + v0)/2, xGraphState))
 
     xDev = []
     QSW_dev = []
-    v1 = 1
     nbPlayers = 3
     for v0 in x:
-        if quantumStrategies.devStratIsNashEq(v0, v1, nbPlayers):
-            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        v1 = 2 - v0
+        game = Game(nbPlayers, v0, v1, sym=False)
+        if quantumStrategies.devStratIsNashEq(game):
+            dev = quantumStrategies.QSW(game, quantumStrategies.optimalTheta(game))
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -163,13 +165,12 @@ def plotSeesaw3():
     plt.plot(xDev, QSW_dev, "-", label="Deviated strat SW")
 
 
-
     plt.plot(xGraphState, graphState,'-', label="Graph state strat SW")
     plt.legend(loc="best")
 
     plt.xlabel(r"$\frac{v_0}{v_1}$", labelpad=10)
     plt.ylabel(r"social welfare", labelpad=10)
-    plt.ylim(0.4, 1)
+    plt.ylim(0.4, 2)
     plt.xlim(0, 1)
 
 
@@ -203,8 +204,9 @@ def plotSeeSaw5Sym():
     v1 = 1
     nbPlayers = 5
     for v0 in x:
-        if quantumStrategies.devStratIsNashEq(v0, v1, nbPlayers, sym=True):
-            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers, sym=True), nbPlayers, sym=True)
+        game = Game(nbPlayers, v0, v1, sym=True)
+        if quantumStrategies.devStratIsNashEq(game):
+            dev = quantumStrategies.QSW(game, quantumStrategies.optimalTheta(game))
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -252,8 +254,9 @@ def plotdev3():
     v1 = 1
     nbPlayers = 3
     for v0 in x:
-        if quantumStrategies.devStratIsNashEq(v0, v1, nbPlayers):
-            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        game = Game(nbPlayers, v0, v1, sym=False)
+        if quantumStrategies.devStratIsNashEq(game):
+            dev = quantumStrategies.QSW(game, quantumStrategies.optimalTheta(game))
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -297,8 +300,9 @@ def plot5SymDev():
     v1 = 1
     nbPlayers = 5
     for v0 in x:
-        if quantumStrategies.devStratIsNashEq(v0, v1, nbPlayers, sym=True):
-            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers, sym=True), nbPlayers, sym=True)
+        game = Game(nbPlayers, v0, v1, sym=True)
+        if quantumStrategies.devStratIsNashEq(game):
+            dev = quantumStrategies.QSW(game, quantumStrategies.optimalTheta(game))
             xDev.append(v0)
             QSW_dev.append(dev)
 
@@ -346,8 +350,9 @@ def plot5Dev():
     v1 = 1
     nbPlayers = 5
     for v0 in x:
-        if quantumStrategies.devStratIsNashEq(v0, v1, nbPlayers):
-            dev = quantumStrategies.QSW(v0, v1, quantumStrategies.optimalTheta(v0, v1, nbPlayers), nbPlayers)
+        game = Game(nbPlayers, v0, v1, sym=False)
+        if quantumStrategies.devStratIsNashEq(game):
+            dev = quantumStrategies.QSW(game, quantumStrategies.optimalTheta(game))
             xDev.append(v0)
             QSW_dev.append(dev)
 
