@@ -31,6 +31,41 @@ def bestClassicalStrategy(game):
 
     return socialWelfare
 
+def bestClassicalStrategy_v2(game):
+    """
+    Classical strat for when v0 > v1.
+    Players always answer 0.
+    """
+    try:
+        v0, v1 = game.v0.value, game.v1.value
+    except:
+        v0, v1 = game.v0, game.v1
+    assert(v0 > v1)
+
+    if game.nbPlayers == 5:
+        return 1/30 * 25 * v0
+    else:
+        return 1/12 * 9 * v0
+
+def classicalStratPOVMs_v2(game):
+    """
+    Classical strat for when v0 > v1.
+    Players always answer 0.
+    """
+    try:
+        v0, v1 = game.v0.value, game.v1.value
+    except:
+        v0, v1 = game.v0, game.v1
+    assert(v0 > v1)
+
+    opDict = {}
+    for playerId in range(game.nbPlayers):
+        opDict[str(playerId) + "00"] = np.array([[0, 0], [0, 0]])
+        opDict[str(playerId) + "10"] = np.array([[1, 0], [0, 1]])
+        opDict[str(playerId) + "01"] = np.array([[1, 0], [0, 1]])
+        opDict[str(playerId) + "11"] = np.array([[0, 0], [0, 0]])
+
+    return opDict
 
 def genRhoClassic(nbPlayers):
     """
