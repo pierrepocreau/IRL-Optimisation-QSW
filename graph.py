@@ -38,7 +38,7 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     P5 = [operatorsP1, operatorsP2, operatorsP3, operatorsP4, operatorsP5]
     if nbPlayers == 5: P = P5
     else: P = P3
-    x = np.linspace(0, 1, points)
+    x = np.linspace(1, 2, points)
 
     paramV0 = cp.Parameter()
     v1 = 2 - paramV0
@@ -232,16 +232,16 @@ def graph(nbPlayers, sym, points, seeSawRepeatLow = 10, seeSawRepeatHigh = 3, tr
     fig, axs = plt.subplots(1, constrained_layout = True, figsize=(10, 10))
     fig.suptitle("Graph for {} players with {} points, sym: {}".format(nbPlayers, points, sym))
 
-    axs.plot([v/(2-v) for v in xGraphState], QSW_GraphState, label="GraphState")
-    axs.plot(x/(2-x), QSW_Nash, label="HierarchieNash")
-    axs.plot(x/(2-x), QSW_NotNash, label="HierarchieNotNash")
-    axs.plot(x/(2-x), list(reversed(QSW_SeeSaw)), label="SeeSaw")
+    axs.plot([(2-v)/v for v in xGraphState], QSW_GraphState, label="GraphState")
+    axs.plot((2-x)/x, QSW_Nash, label="HierarchieNash")
+    axs.plot((2-x)/x, QSW_NotNash, label="HierarchieNotNash")
+    axs.plot((2-x)/x, list(reversed(QSW_SeeSaw)), label="SeeSaw")
     # axs.plot(x, list(reversed(Winrate_SeeSaw)), label="Winrate Seesaw")
-    axs.plot([v/(2-v) for v in xClassical], SW_classical, label="SW best classical strat")
-    axs.plot([v/(2-v) for v in xDev], QSW_dev, label="SW of deviated strat")
+    #axs.plot([v/(2-v) for v in xClassical], SW_classical, label="SW best classical strat")
+    # axs.plot([(2-v)/v for v in xDev], QSW_dev, label="SW of deviated strat")
 
     axs.set_title("Quantum social welfare")
-    axs.set_xlabel("V0/V1")
+    axs.set_xlabel("V1/V0")
     axs.set_ylabel("QSW")
     axs.set_ylim([0, 2])
     axs.legend(loc="upper right")

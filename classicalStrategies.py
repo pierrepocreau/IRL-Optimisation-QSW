@@ -13,7 +13,7 @@ def bestClassicalStrategy(game):
     payoutRatio = v0 / v1
 
     assert(game.nbPlayers == 3 or game.nbPlayers == 5)
-    assert(0 <= payoutRatio <= 1)
+   # assert(0 <= payoutRatio <= 1)
 
     if game.nbPlayers == 5:
         if not game.sym:
