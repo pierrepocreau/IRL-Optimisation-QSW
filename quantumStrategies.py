@@ -113,7 +113,7 @@ def graphStateStrategy(game):
     payoutRatio = v0 / v1
 
     assert(game.nbPlayers == 3 or game.nbPlayers == 5)
-    assert(0 <= payoutRatio <= 1)
+   # assert(0 <= payoutRatio <= 1)
 
     socialWelfare = (game.v0.value + game.v1.value)/2
 
