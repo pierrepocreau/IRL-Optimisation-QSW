@@ -36,9 +36,9 @@ def plotSeeSaw5():
 
     x = list(map(abscisseFunc, x)) # x abscisse is v0/v1
 
-    plt.scatter(x, seesaw, s=12, marker='x', color = 'k', linewidths=0.4, label="Seesaw lower bounds", zorder=3)
+    plt.scatter(x, seesaw, s=12, marker='x', color = 'k', linewidths=0.4, label="Seesaw lower bounds ($Q$)", zorder=3)
 
-    plt.plot(x, hierarchieNash, "-", label="NPA upper bounds")
+    plt.plot(x, hierarchieNash, "-", label="NPA upper bounds ($Q_{corr}$)")
     p1 = plt.plot(xclassical1, classical1, linestyle="-", label="Best classical SW")
     plt.plot(xclassical2, classical2, color = p1[0].get_color(), linestyle="-")
 
@@ -75,8 +75,8 @@ def plotSeesaw3():
     graphState = list(map(lambda v0: (2 - v0 + v0)/2, xGraphState))
 
     x = list(map(abscisseFunc, x))
-    plt.scatter(x, seesaw, s=12, marker='x', color = 'k', linewidths=0.4, label="Seesaw lower bounds", zorder=3)
-    plt.plot(x, hierarchieNash, "-", label="NPA upper bounds")
+    plt.scatter(x, seesaw, s=12, marker='x', color = 'k', linewidths=0.4, label="Seesaw lower bounds ($Q$)", zorder=3)
+    plt.plot(x, hierarchieNash, "-", label="NPA upper bounds ($Q_{corr}$)")
 
     plt.plot(xclassical, classical, linestyle="-", label="Best classical SW")
 
@@ -122,9 +122,9 @@ def plotSeeSaw5Sym():
 
     x = list(map(abscisseFunc, x))
 
-    plt.scatter(x, seesaw, s=12, marker='x', color = 'k', linewidths=0.4, label="Seesaw lower bounds", zorder=3)
+    plt.scatter(x, seesaw, s=12, marker='x', color = 'k', linewidths=0.4, label="Seesaw lower bounds ($Q$)", zorder=3)
 
-    plt.plot(x, hierarchieNash, "-", label="NPA upper bounds")
+    plt.plot(x, hierarchieNash, "-", label="NPA upper bounds ($Q_{corr}$)")
     p1 = plt.plot(xclassical1, classical1, linestyle="-", label="Best classical SW")
     plt.plot(xclassical2, classical2, color = p1[0].get_color(), linestyle="-")
 
